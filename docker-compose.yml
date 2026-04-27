@@ -1,0 +1,43 @@
+services:
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: urlshortener
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 3
+
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 3
+
+  mockpass:
+    build:
+      context: ./docker/mockpass
+    ports:
+      - "5156:5156"
+    environment:
+      PORT: 5156
+      SHOW_LOGIN_PAGE: "true"
+      # SP_RP_JWKS_ENDPOINT points to the backend JWKS endpoint.
+      # host.docker.internal resolves to the host machine from inside Docker.
+      SP_RP_JWKS_ENDPOINT: "http://host.docker.internal:3001/.well-known/jwks.json"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+volumes:
+  postgres_data:
