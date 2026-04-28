@@ -13,44 +13,61 @@ Build a URL shortening service (like [bit.ly](https://bit.ly/)). Singpass serves
 
 ## Functional Requirements
 
-### Authentication (Singpass)
+### P0 — Skeleton (end-to-end baseline)
 
-| Priority | Requirement |
-|----------|-------------|
-| P0 | Creating or managing links requires Singpass login via OpenID Connect (OIDC). MyInfo is not required. |
-| P0 | Viewing and following short links is open to anyone — no authentication required. |
-| P1 | Session expiry follows Singpass token lifetime; re-authentication is required to create or manage links. |
+Nothing else can be built without these.
 
-### Core URL Operations
+- Project scaffolding: monorepo + docker-compose (NestJS, NextJS, Postgres, Redis)
+- Database schema + migrations
+- MockPass OIDC auth flow (`/auth/login`, `/auth/callback`, `/auth/logout`, `/auth/me`)
+- `POST /api/v1/link` — create a link (basic, no custom alias yet)
+- `GET /api/v1/link/:code` — public redirect (Postgres only, no cache yet); HTTP 302
+- Minimal frontend: login page → create link form → show shortened URL
 
-| Priority | Requirement |
-|----------|-------------|
-| P0 | Authenticated users can submit a long URL and receive a unique shortened URL. |
-| P0 | Any visitor is redirected to the original URL via the short link using HTTP 302 (temporary redirect). HTTP 301 is explicitly avoided — browser caching would bypass deactivation, deletion, and expiry controls. |
-| P1 | Authenticated users can specify a custom alias (e.g., `domain.com/my-link`). Aliases must be 3–50 characters, alphanumeric and hyphens only. |
-| P1 | Duplicate custom aliases are rejected with a clear error message. A reserved words list (e.g. `api`, `login`, `logout`, `health`) prevents shadowing system routes. |
-| P1 | Aliases are permanently retired after deletion and cannot be reclaimed by other users. |
-| P2 | Authenticated users can view and manage (deactivate/delete) their own links. |
-| P2 | Links can be set to expire after a specified date. Expiry is enforced lazily at redirect time; expired links return `410 Gone` with `{"error": "link_expired"}`. No background job required. |
+### P1 — Feature complete (demo critical)
 
-### URL Validation Rules
+The demo feels broken without these.
 
-- HTTPS only; HTTP URLs are rejected.
-- Localhost and private IP ranges are blocked (`127.x`, `10.x`, `172.16–31.x`, `192.168.x`) to prevent SSRF.
-- Maximum URL length: 2048 characters.
+- `GET /api/v1/links` — list current user's links (dashboard)
+- `DELETE /api/v1/link/:code` — with alias permanent retirement
+- URL validation: HTTPS only, block private IPs (`127.x`, `10.x`, `172.16–31.x`, `192.168.x`), max 2048 chars
+- Custom alias support: 3–50 chars, alphanumeric and hyphens only; reserved words list (`api`, `login`, `logout`, `health`, etc.)
+- Short code collision handling: retry with new salt on unique constraint violation
+- Redis cache on the redirect path (required for < 50ms p99 target); invalidated on deactivation or deletion
+- CORS config on NestJS
+- Proper error responses: `409` alias conflict, `410` expired, `400` invalid URL
+
+### P2 — Demo-ready polish
+
+Makes the demo feel complete and actually deployable.
+
+- `PATCH /api/v1/link/:code` — update `expires_at`, `is_active`, `original_url`
+- Lazy expiry enforcement at redirect time; expired links return `410 Gone` with `{"error": "link_expired"}`
+- Frontend dashboard: list links, delete, show active/expired status
+- Rate limiting on create and redirect endpoints
+- Railway deployment config (Dockerfiles for both services)
+- Register MockPass callback URL for production Railway URL
+
+### P3 — Post-demo
+
+Don't touch these until after the demo.
+
+- OpenAPI/Swagger spec covering all `/api/v1/` endpoints
+- CSRF tokens + CSP headers
+- Full test coverage (unit + integration)
+- README with local setup instructions (MockPass config, env vars, edge cases)
+- Click analytics (explicitly out of scope until post-demo)
 
 ---
 
 ## Non-Functional Requirements
 
-| Concern | Requirement |
-|---------|-------------|
-| **Availability** | Redirection must be highly available; downtime breaks all active links. |
-| **Latency** | Redirects must resolve in < 50ms p99. |
-| **Concurrency** | System handles concurrent writes without race conditions on hash generation. |
-| **Collision Resistance** | Short code generation (e.g., Base62) must handle collisions gracefully at scale. |
-| **Read-Heavy Design** | Architecture optimised for high read-to-write ratio (redirects >> creations). |
-| **Compliance** | Singpass integration must follow NDI guidelines and Singapore's PDPA. The application stores the user's `sub` (opaque identifier) and display name from the OIDC token; no other personal data is retained. |
+- **Availability** — Redirection must be highly available; downtime breaks all active links.
+- **Latency** — Redirects must resolve in < 50ms p99.
+- **Concurrency** — System handles concurrent writes without race conditions on hash generation.
+- **Collision Resistance** — Short code generation (Base62) must handle collisions gracefully at scale.
+- **Read-Heavy Design** — Architecture optimised for high read-to-write ratio (redirects >> creations).
+- **Compliance** — Singpass integration must follow NDI guidelines and Singapore's PDPA. The application stores the user's `sub` (opaque identifier) and display name from the OIDC token; no other personal data is retained.
 
 ---
 
@@ -62,7 +79,7 @@ Singpass OIDC integration for user login. Sessions are stateless — the Singpas
 
 ### Backend
 
-Lightweight, high-concurrency framework (e.g., Go, Node.js/Express). REST API versioned under `/api/v1/`.
+NestJS (Node.js). REST API versioned under `/api/v1/`.
 
 ### Data Store
 
@@ -81,10 +98,9 @@ Short codes are generated by Base62-encoding the first 7 characters of SHA-256(U
 ## Out of Scope
 
 - Advanced analytics (geolocation, device type, referrers).
-- Click counters and basic link analytics (deferred to future development).
+- Click counters and basic link analytics (deferred to P3).
 - Non-Singpass authentication methods (social login, email/password).
 - Malicious link scanning or phishing detection.
-- Full analytics dashboard (a basic link management UI is in scope; see Functional Requirements).
 
 ---
 
@@ -93,13 +109,3 @@ Short codes are generated by Base62-encoding the first 7 characters of SHA-256(U
 - Singpass (MockPass) login flow is functional end-to-end in the demo environment.
 - Public redirect flow works without any authentication headers and resolves within the < 50ms p99 target under basic simulated load.
 - Authenticated user can create, view, and delete their own links via the dashboard UI.
-- Core create/redirect/manage flows are covered by unit and integration tests.
-
----
-
-## Deliverables
-
-- OpenAPI/Swagger spec covering all `/api/v1/` endpoints.
-- README with local setup instructions, including MockPass configuration and environment variables.
-
-**Edge cases to document:** invalid/malformed URLs, expired Singpass sessions, alias conflicts, and oversized payloads.
