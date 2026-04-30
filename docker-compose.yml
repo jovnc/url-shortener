@@ -33,9 +33,7 @@ services:
     environment:
       PORT: 5156
       SHOW_LOGIN_PAGE: "true"
-      # SP_RP_JWKS_ENDPOINT points to the backend JWKS endpoint.
-      # host.docker.internal resolves to the host machine from inside Docker.
-      SP_RP_JWKS_ENDPOINT: "http://host.docker.internal:3001/.well-known/jwks.json"
+      FAPI_CLIENT_JWKS_ENDPOINT: "http://host.docker.internal:3001/.well-known/jwks.json"
     extra_hosts:
       - "host.docker.internal:host-gateway"
 

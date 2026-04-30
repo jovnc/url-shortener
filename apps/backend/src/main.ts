@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import cookieParser from 'cookie-parser';
@@ -18,7 +19,7 @@ async function bootstrap() {
 
   // Bootstrap configuration
   app.setGlobalPrefix('api/v1', {
-    exclude: ['.well-known/(.*)'],
+    exclude: ['.well-known/*path'],
   });
 
   app.enableCors({
