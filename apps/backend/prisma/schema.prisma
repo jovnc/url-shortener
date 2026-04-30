@@ -1,0 +1,37 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+    provider = "prisma-client"
+    output   = "../src/generated/prisma"
+}
+
+datasource db {
+    provider = "postgresql"
+}
+
+model User {
+    id        String   @id @default(uuid())
+    sub       String   @unique
+    name      String?
+    createdAt DateTime @default(now()) @map("created_at")
+    links     Link[]
+
+    @@map("users")
+}
+
+model Link {
+    id          String    @id @default(uuid())
+    userId      String    @map("user_id")
+    shortCode   String    @unique @map("short_code")
+    originalUrl String    @map("original_url")
+    isActive    Boolean   @default(true) @map("is_active")
+    expiresAt   DateTime? @map("expires_at")
+    createdAt   DateTime  @default(now()) @map("created_at")
+    updatedAt   DateTime  @updatedAt @map("updated_at")
+    user        User      @relation(fields: [userId], references: [id])
+
+    @@index([userId])
+    @@index([expiresAt])
+    @@map("links")
+}

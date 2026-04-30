@@ -2,3 +2,5 @@ node_modules/
 build/
 dist/
 .pnpm/
+
+/src/generated/prisma
