@@ -1,12 +1,16 @@
 import 'dotenv/config';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module.js';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import type { AppConfig } from './app.config.js';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  const configService = app.get(ConfigService);
+  const { port, frontendUrl } = configService.getOrThrow<AppConfig>('app');
 
   // Swagger setup
   const config = new DocumentBuilder()
@@ -23,13 +27,14 @@ async function bootstrap() {
   });
 
   app.enableCors({
-    origin: process.env.FRONTEND_URL ?? 'http://localhost:3000',
+    origin: frontendUrl,
     credentials: true,
   });
 
   app.use(cookieParser());
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
 
-  await app.listen(process.env.PORT ?? 3001);
+  await app.listen(port);
 }
-bootstrap();
+
+void bootstrap();

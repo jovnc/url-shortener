@@ -1,11 +1,8 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import {
-  generateKeyPair,
-  exportJWK,
-  importJWK,
-  type JWK,
-} from 'jose';
+import type { AppConfig } from '../app.config.js';
+import { generateKeyPair, exportJWK, importJWK, type JWK } from 'jose';
 import {
   discovery,
   allowInsecureRequests,
@@ -41,6 +38,7 @@ export class AuthService implements OnModuleInit {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
+    private readonly configService: ConfigService,
   ) {}
 
   async onModuleInit() {
@@ -68,20 +66,22 @@ export class AuthService implements OnModuleInit {
       ],
     };
 
+    const { issuer, clientId } =
+      this.configService.getOrThrow<AppConfig>('app').mockpass;
     this.oidcConfig = await discovery(
-      new URL(process.env.MOCKPASS_ISSUER!),
-      process.env.MOCKPASS_CLIENT_ID!,
+      new URL(issuer),
+      clientId,
       undefined,
       PrivateKeyJwt({ key: this.signingKeyPair.privateKey, kid: 'sig-key-1' }),
       { execute: [allowInsecureRequests] },
     );
     allowInsecureRequests(this.oidcConfig);
 
-    enableDecryptingResponses(
-      this.oidcConfig,
-      ['A256GCM', 'A256CBC-HS512'],
-      { key: this.encKeyPair.privateKey, alg: 'ECDH-ES+A256KW', kid: 'enc-key-1' },
-    );
+    enableDecryptingResponses(this.oidcConfig, ['A256GCM', 'A256CBC-HS512'], {
+      key: this.encKeyPair.privateKey,
+      alg: 'ECDH-ES+A256KW',
+      kid: 'enc-key-1',
+    });
   }
 
   getPublicJwks() {
@@ -101,7 +101,8 @@ export class AuthService implements OnModuleInit {
       this.oidcConfig,
       {
         response_type: 'code',
-        redirect_uri: process.env.MOCKPASS_REDIRECT_URI!,
+        redirect_uri:
+          this.configService.getOrThrow<AppConfig>('app').mockpass.redirectUri,
         scope: 'openid',
         state,
         nonce,
@@ -132,7 +133,12 @@ export class AuthService implements OnModuleInit {
     const tokens = await authorizationCodeGrant(
       this.oidcConfig,
       new URL(callbackUrl),
-      { pkceCodeVerifier: codeVerifier, expectedState, expectedNonce, idTokenExpected: true },
+      {
+        pkceCodeVerifier: codeVerifier,
+        expectedState,
+        expectedNonce,
+        idTokenExpected: true,
+      },
       undefined,
       dpopOptions,
     );
@@ -179,7 +185,10 @@ export class AuthService implements OnModuleInit {
         this.oidcConfig,
         { privateKey: dpopPrivateKey, publicKey: dpopPublicKey },
         {
-          [modifyAssertion]: (_header: object, payload: Record<string, unknown>) => {
+          [modifyAssertion]: (
+            _header: object,
+            payload: Record<string, unknown>,
+          ) => {
             if (typeof payload.iat === 'number')
               payload.exp = payload.iat + DPOP_EXPIRY_SECONDS;
           },

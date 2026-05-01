@@ -7,9 +7,11 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import type { Request, Response } from 'express';
 import { AuthService } from './auth.service.js';
 import { JwtGuard } from './jwt.guard.js';
+import type { AppConfig } from '../app.config.js';
 
 interface AuthenticatedRequest extends Request {
   user: {
@@ -33,7 +35,10 @@ const OIDC_COOKIE_OPTS = {
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly configService: ConfigService,
+  ) {}
 
   @Get('login')
   async login(@Res() res: Response) {
@@ -66,7 +71,9 @@ export class AuthController {
       throw new BadRequestException('Invalid OIDC session');
     }
 
-    const redirectBase = new URL(process.env.MOCKPASS_REDIRECT_URI!);
+    const redirectBase = new URL(
+      this.configService.getOrThrow<AppConfig>('app').mockpass.redirectUri,
+    );
     redirectBase.search = new URLSearchParams(
       req.query as Record<string, string>,
     ).toString();
@@ -85,7 +92,7 @@ export class AuthController {
       sameSite: 'lax',
       maxAge: 86_400_000,
     });
-    res.redirect(process.env.FRONTEND_URL ?? 'http://localhost:3000');
+    res.redirect(this.configService.getOrThrow<AppConfig>('app').frontendUrl);
   }
 
   @Post('logout')
