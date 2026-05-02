@@ -1,14 +1,8 @@
 # Railway Deployment
 
-This app deploys to Railway as five services:
+This app deploys to Railway as five services: `frontend`, `backend`, `mockpass`, `Postgres`, and `Redis`. Only `frontend` and `mockpass` get public domains; `backend` is private and is called by `frontend` over Railway private networking.
 
-- `frontend`: Next.js app from `apps/frontend/Dockerfile`
-- `backend`: NestJS API from `apps/backend/Dockerfile`
-- `mockpass`: test Singpass provider from `docker/mockpass/Dockerfile`
-- `Postgres`: Railway managed Postgres
-- `Redis`: Railway managed Redis
-
-Keep the repository root as the build context. Do not set a service root directory, because the Dockerfiles use the root workspace files.
+Keep the repository root as the build context. Do not set a service root directory, because the Dockerfiles use workspace-level files.
 
 ## 1. Create Services
 
@@ -39,24 +33,30 @@ railway environment edit --service-config mockpass build.builder DOCKERFILE
 railway environment edit --service-config mockpass build.dockerfilePath "docker/mockpass/Dockerfile"
 ```
 
-## 3. Add Domains
+## 3. Add Public Domains
 
-Generate Railway domains for the app services:
+Generate public domains only for `frontend` and `mockpass`:
 
 ```bash
 railway domain --service frontend --json
-railway domain --service backend --json
 railway domain --service mockpass --json
 ```
 
-Use the resulting public URLs in the variables below.
+Do not generate a domain for `backend`.
+
+For the current production frontend, use:
+
+```bash
+export FRONTEND_URL='https://frontend-production-80ed.up.railway.app'
+export MOCKPASS_URL='https://<mockpass-domain>'
+```
 
 ## 4. Set Variables
 
 Generate a JWT secret locally:
 
 ```bash
-openssl rand -base64 32
+export JWT_SECRET="$(openssl rand -base64 32)"
 ```
 
 Set backend variables:
@@ -64,33 +64,29 @@ Set backend variables:
 ```bash
 railway variable set DATABASE_URL='${{Postgres.DATABASE_URL}}' --service backend
 railway variable set REDIS_URL='${{Redis.REDIS_URL}}' --service backend
-railway variable set JWT_SECRET='<generated-secret>' --service backend
-railway variable set FRONTEND_URL='https://<frontend-domain>' --service backend
-railway variable set SHORT_LINK_BASE_URL='https://<frontend-domain>' --service backend
-railway variable set MOCKPASS_ISSUER='https://<mockpass-domain>/singpass/v3/fapi' --service backend
+railway variable set JWT_SECRET="$JWT_SECRET" --service backend
+railway variable set FRONTEND_URL="$FRONTEND_URL" --service backend
+railway variable set SHORT_LINK_BASE_URL="$FRONTEND_URL" --service backend
+railway variable set MOCKPASS_ISSUER="$MOCKPASS_URL/singpass/v3/fapi" --service backend
 railway variable set MOCKPASS_CLIENT_ID='my-client-id' --service backend
-railway variable set MOCKPASS_REDIRECT_URI='https://<backend-domain>/api/v1/auth/callback' --service backend
+railway variable set MOCKPASS_REDIRECT_URI="$FRONTEND_URL/api/auth/callback" --service backend
 ```
 
 Set frontend variables:
 
 ```bash
-railway variable set NEXT_PUBLIC_API_URL='https://<backend-domain>' --service frontend
+railway variable set BACKEND_URL='http://${{backend.RAILWAY_PRIVATE_DOMAIN}}:3001' --service frontend
 ```
-
-`NEXT_PUBLIC_API_URL` is baked into the frontend at build time, so redeploy `frontend` after changing it.
 
 Set Mockpass variables:
 
 ```bash
 railway variable set PORT=5156 --service mockpass
 railway variable set SHOW_LOGIN_PAGE=true --service mockpass
-railway variable set FAPI_CLIENT_JWKS_ENDPOINT='https://<backend-domain>/.well-known/jwks.json' --service mockpass
+railway variable set FAPI_CLIENT_JWKS_ENDPOINT='http://${{backend.RAILWAY_PRIVATE_DOMAIN}}:3001/.well-known/jwks.json' --service mockpass
 ```
 
 ## 5. Deploy
-
-Deploy Mockpass first, then backend, then frontend:
 
 ```bash
 railway up --service mockpass --environment production --detach -m "Deploy Mockpass"
@@ -101,8 +97,6 @@ railway up --service frontend --environment production --detach -m "Deploy front
 If your environment is not named `production`, replace it in the commands.
 
 ## 6. Enable Automatic Deploys
-
-Connect each app service to the GitHub repository and deploy from `main`:
 
 ```bash
 railway environment edit --service-config frontend source.repo "jovnc/url-shortener"
@@ -118,22 +112,13 @@ railway environment edit --service-config mockpass source.branch "main"
 railway environment edit --service-config mockpass build.watchPatterns '["docker/mockpass/**",".dockerignore"]'
 ```
 
-Keep the repository root as the build context. Do not set `source.rootDirectory`, because the Dockerfiles copy workspace-level files.
-
-The watch patterns prevent unrelated changes from redeploying every service. After this is configured, pushes to `main` trigger automatic Railway deployments for the affected services.
-
 ## 7. Verify
 
 ```bash
 railway status --json
-curl https://<backend-domain>/api/v1/health
-curl -I https://<backend-domain>/api/v1/auth/login
+railway logs --service backend -n 100
+railway logs --service frontend -n 100
+curl -I "$FRONTEND_URL"
 ```
 
-Expected health response:
-
-```json
-{ "status": "ok" }
-```
-
-For cross-origin frontend/backend deployments, auth cookies must include `Secure; SameSite=None`. Confirm this in the `/api/v1/auth/login` response headers.
+Then verify in the browser that login, link creation, link listing, disabling links, and opening `https://frontend-production-80ed.up.railway.app/<short-code>` work. The browser network tab should only show calls to the frontend domain.

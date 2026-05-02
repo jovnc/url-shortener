@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { backendUrl } from '@/lib/backend';
 
-const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
 const SHORT_CODE_PATTERN = /^[0-9a-zA-Z]+$/;
 
 export async function GET(
@@ -13,7 +13,7 @@ export async function GET(
     return new NextResponse('Short link not found', { status: 404 });
   }
 
-  const response = await fetch(`${API}/api/v1/links/${code}`, {
+  const response = await fetch(backendUrl(`/api/v1/links/${code}`), {
     cache: 'no-store',
     redirect: 'manual',
   });

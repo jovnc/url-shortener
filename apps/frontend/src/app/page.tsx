@@ -2,8 +2,6 @@
 
 import { FormEvent, useEffect, useState } from 'react';
 
-const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
-
 interface User {
   id: string;
   sub: string;
@@ -44,7 +42,7 @@ export default function Home() {
   useEffect(() => {
     async function load() {
       try {
-        const meResponse = await fetch(`${API}/api/v1/auth/me`, {
+        const meResponse = await fetch('/api/auth/me', {
           credentials: 'include',
         });
 
@@ -56,7 +54,7 @@ export default function Home() {
         const currentUser = (await meResponse.json()) as User;
         setUser(currentUser);
 
-        const linksResponse = await fetch(`${API}/api/v1/links`, {
+        const linksResponse = await fetch('/api/links', {
           credentials: 'include',
         });
 
@@ -79,7 +77,7 @@ export default function Home() {
     setError('');
 
     try {
-      const response = await fetch(`${API}/api/v1/links`, {
+      const response = await fetch('/api/links', {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -106,7 +104,7 @@ export default function Home() {
     setError('');
 
     try {
-      const response = await fetch(`${API}/api/v1/links/${id}`, {
+      const response = await fetch(`/api/links/${id}`, {
         method: 'DELETE',
         credentials: 'include',
       });
@@ -124,7 +122,7 @@ export default function Home() {
   }
 
   async function logout() {
-    await fetch(`${API}/api/v1/auth/logout`, {
+    await fetch('/api/auth/logout', {
       method: 'POST',
       credentials: 'include',
     });
@@ -143,9 +141,11 @@ export default function Home() {
         <h1>Short links, no clutter.</h1>
         <p className="muted">Sign in to create and manage your short links.</p>
         {error ? <p className="error">{error}</p> : null}
-        <a className="button primary" href={`${API}/api/v1/auth/login`}>
-          Login with Singpass
-        </a>
+        <form action="/api/auth/login" method="get">
+          <button className="button primary" type="submit">
+            Login with Singpass
+          </button>
+        </form>
       </main>
     );
   }
