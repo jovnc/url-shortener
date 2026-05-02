@@ -1,6 +1,6 @@
 # Railway Deployment
 
-This app deploys to Railway as five services: `frontend`, `backend`, `mockpass`, `Postgres`, and `Redis`. Only `frontend` and `mockpass` get public domains; `backend` is private and is called by `frontend` over Railway private networking.
+This app deploys to Railway as five services: `frontend`, `backend`, `mockpass`, `Postgres`, and `Redis`. Only `frontend` and `mockpass` get public domains; `backend` is private and is called by `frontend` over Railway private networking. The backend must listen on IPv6 (`::`) for Railway private DNS to reach it.
 
 Keep the repository root as the build context. Do not set a service root directory, because the Dockerfiles use workspace-level files.
 
@@ -23,6 +23,7 @@ If your database services are not named `Postgres` and `Redis`, update the varia
 ```bash
 railway environment edit --service-config frontend build.builder DOCKERFILE
 railway environment edit --service-config frontend build.dockerfilePath "apps/frontend/Dockerfile"
+railway environment edit --service-config frontend deploy.ipv6EgressEnabled true
 
 railway environment edit --service-config backend build.builder DOCKERFILE
 railway environment edit --service-config backend build.dockerfilePath "apps/backend/Dockerfile"
@@ -31,6 +32,7 @@ railway environment edit --service-config backend deploy.healthcheckTimeout 120
 
 railway environment edit --service-config mockpass build.builder DOCKERFILE
 railway environment edit --service-config mockpass build.dockerfilePath "docker/mockpass/Dockerfile"
+railway environment edit --service-config mockpass deploy.ipv6EgressEnabled true
 ```
 
 ## 3. Add Public Domains
@@ -64,6 +66,7 @@ Set backend variables:
 ```bash
 railway variable set DATABASE_URL='${{Postgres.DATABASE_URL}}' --service backend
 railway variable set REDIS_URL='${{Redis.REDIS_URL}}' --service backend
+railway variable set PORT=3001 --service backend
 railway variable set JWT_SECRET="$JWT_SECRET" --service backend
 railway variable set FRONTEND_URL="$FRONTEND_URL" --service backend
 railway variable set SHORT_LINK_BASE_URL="$FRONTEND_URL" --service backend
