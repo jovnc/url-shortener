@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   GoneException,
   Injectable,
   NotFoundException,
@@ -9,11 +8,9 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../database/prisma.service.js';
 import { RedisService } from '../redis/redis.service.js';
 import type { AppConfig } from '../app.config.js';
+import { ShortCodeGenerator } from './short-code-generator.js';
 
-const BASE62_ALPHABET =
-  '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
 const BASE62_PATTERN = /^[0-9a-zA-Z]+$/;
-const COUNTER_KEY = 'links:counter';
 const REDIRECT_CACHE_PREFIX = 'links:redirect:';
 const REDIRECT_CACHE_TTL_SECONDS = 15 * 60;
 
@@ -29,12 +26,11 @@ export class LinksService {
     private readonly prisma: PrismaService,
     private readonly redisService: RedisService,
     private readonly configService: ConfigService,
+    private readonly shortCodeGenerator: ShortCodeGenerator,
   ) {}
 
   async create(userId: string, originalUrl: string) {
-    this.validateOriginalUrl(originalUrl);
-
-    const shortCode = await this.generateShortCode();
+    const shortCode = await this.shortCodeGenerator.next();
 
     try {
       const link = await this.prisma.link.create({
@@ -102,68 +98,14 @@ export class LinksService {
     return this.resolvePayload(payload);
   }
 
-  private validateOriginalUrl(originalUrl: string) {
-    if (originalUrl.trim() !== originalUrl) {
-      throw new BadRequestException(
-        'originalUrl must not include leading or trailing whitespace',
-      );
-    }
-
-    let parsed: URL;
+  private async getCachedRedirectPayload(
+    shortCode: string,
+  ): Promise<RedirectCachePayload | null> {
+    const cached = await this.redisService.get(
+      this.getRedirectCacheKey(shortCode),
+    );
+    if (!cached) return null;
     try {
-      parsed = new URL(originalUrl);
-    } catch {
-      throw new BadRequestException('originalUrl must be an absolute URL');
-    }
-
-    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-      throw new BadRequestException('originalUrl must use http or https');
-    }
-  }
-
-  private async generateShortCode() {
-    const redis = this.redisService.getClient();
-
-    try {
-      const counterExists = await redis.exists(COUNTER_KEY);
-      if (!counterExists) {
-        const linkCount = await this.prisma.link.count();
-        if (linkCount > 0) {
-          throw new ServiceUnavailableException(
-            'Short-code counter is not initialized',
-          );
-        }
-        await redis.set(COUNTER_KEY, '0', { NX: true });
-      }
-
-      const counter = await redis.incr(COUNTER_KEY);
-      return this.encodeBase62(counter);
-    } catch (error) {
-      if (error instanceof ServiceUnavailableException) throw error;
-      throw new ServiceUnavailableException(
-        'Short-code counter is unavailable',
-      );
-    }
-  }
-
-  private encodeBase62(value: number) {
-    if (value === 0) return BASE62_ALPHABET[0];
-
-    let remaining = value;
-    let encoded = '';
-    while (remaining > 0) {
-      encoded = BASE62_ALPHABET[remaining % 62] + encoded;
-      remaining = Math.floor(remaining / 62);
-    }
-    return encoded;
-  }
-
-  private async getCachedRedirectPayload(shortCode: string) {
-    try {
-      const cached = await this.redisService
-        .getClient()
-        .get(this.getRedirectCacheKey(shortCode));
-      if (!cached) return null;
       return JSON.parse(cached) as RedirectCachePayload;
     } catch {
       return null;
@@ -177,15 +119,11 @@ export class LinksService {
     const ttlSeconds = this.getCacheTtlSeconds(payload.expiresAt);
     if (ttlSeconds <= 0) return;
 
-    try {
-      await this.redisService
-        .getClient()
-        .set(this.getRedirectCacheKey(shortCode), JSON.stringify(payload), {
-          EX: ttlSeconds,
-        });
-    } catch {
-      return;
-    }
+    await this.redisService.set(
+      this.getRedirectCacheKey(shortCode),
+      JSON.stringify(payload),
+      ttlSeconds,
+    );
   }
 
   private getCacheTtlSeconds(expiresAt: string | null) {

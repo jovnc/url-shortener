@@ -31,7 +31,51 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     if (this.client.isOpen) await this.client.quit();
   }
 
-  getClient() {
-    return this.client;
+  async get(key: string): Promise<string | null> {
+    try {
+      return await this.client.get(key);
+    } catch {
+      return null;
+    }
+  }
+
+  async set(key: string, value: string, ttlSeconds?: number): Promise<void> {
+    try {
+      if (ttlSeconds !== undefined) {
+        await this.client.set(key, value, { EX: ttlSeconds });
+      } else {
+        await this.client.set(key, value);
+      }
+    } catch {
+      // cache write failure is acceptable
+    }
+  }
+
+  async del(key: string): Promise<void> {
+    try {
+      await this.client.del(key);
+    } catch {
+      // ignore
+    }
+  }
+
+  async exists(key: string): Promise<boolean> {
+    try {
+      return (await this.client.exists(key)) > 0;
+    } catch {
+      return false;
+    }
+  }
+
+  async setNx(key: string, value: string): Promise<boolean> {
+    try {
+      return (await this.client.set(key, value, { NX: true })) !== null;
+    } catch {
+      return false;
+    }
+  }
+
+  async incr(key: string): Promise<number> {
+    return this.client.incr(key);
   }
 }
