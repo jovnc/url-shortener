@@ -19,5 +19,6 @@ import type { AppConfig } from '../app.config.js';
   ],
   providers: [AuthService, JwtGuard],
   controllers: [AuthController, JwksController],
+  exports: [JwtGuard],
 })
 export class AuthModule {}
