@@ -33,7 +33,7 @@ export class AuthService implements OnModuleInit {
     privateKey: CryptoKey;
   };
   private jwks!: object;
-  private oidcConfig!: Configuration;
+  private oidcConfig?: Configuration;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -66,22 +66,6 @@ export class AuthService implements OnModuleInit {
       ],
     };
 
-    const { issuer, clientId } =
-      this.configService.getOrThrow<AppConfig>('app').mockpass;
-    this.oidcConfig = await discovery(
-      new URL(issuer),
-      clientId,
-      undefined,
-      PrivateKeyJwt({ key: this.signingKeyPair.privateKey, kid: 'sig-key-1' }),
-      { execute: [allowInsecureRequests] },
-    );
-    allowInsecureRequests(this.oidcConfig);
-
-    enableDecryptingResponses(this.oidcConfig, ['A256GCM', 'A256CBC-HS512'], {
-      key: this.encKeyPair.privateKey,
-      alg: 'ECDH-ES+A256KW',
-      kid: 'enc-key-1',
-    });
   }
 
   getPublicJwks() {
@@ -89,6 +73,7 @@ export class AuthService implements OnModuleInit {
   }
 
   async buildLoginUrl() {
+    const oidcConfig = await this.getOidcConfig();
     const codeVerifier = randomPKCECodeVerifier();
     const codeChallenge = await calculatePKCECodeChallenge(codeVerifier);
     const state = randomState();
@@ -98,7 +83,7 @@ export class AuthService implements OnModuleInit {
     const dpopOptions = await this.getDpopOptions(dpopKeys);
 
     const url = await buildAuthorizationUrlWithPAR(
-      this.oidcConfig,
+      oidcConfig,
       {
         response_type: 'code',
         redirect_uri:
@@ -128,10 +113,11 @@ export class AuthService implements OnModuleInit {
     expectedNonce: string,
     dpopKeys: { privateJwk: JWK; publicJwk: JWK },
   ) {
+    const oidcConfig = await this.getOidcConfig();
     const dpopOptions = await this.getDpopOptions(dpopKeys);
 
     const tokens = await authorizationCodeGrant(
-      this.oidcConfig,
+      oidcConfig,
       new URL(callbackUrl),
       {
         pkceCodeVerifier: codeVerifier,
@@ -175,6 +161,7 @@ export class AuthService implements OnModuleInit {
   }
 
   private async getDpopOptions(dpopKeys: { privateJwk: JWK; publicJwk: JWK }) {
+    const oidcConfig = await this.getOidcConfig();
     const [dpopPrivateKey, dpopPublicKey] = (await Promise.all([
       importJWK(dpopKeys.privateJwk, 'ES256'),
       importJWK(dpopKeys.publicJwk, 'ES256'),
@@ -182,7 +169,7 @@ export class AuthService implements OnModuleInit {
 
     return {
       DPoP: getDPoPHandle(
-        this.oidcConfig,
+        oidcConfig,
         { privateKey: dpopPrivateKey, publicKey: dpopPublicKey },
         {
           [modifyAssertion]: (
@@ -195,5 +182,29 @@ export class AuthService implements OnModuleInit {
         },
       ),
     };
+  }
+
+  private async getOidcConfig() {
+    if (this.oidcConfig) return this.oidcConfig;
+
+    const { issuer, clientId } =
+      this.configService.getOrThrow<AppConfig>('app').mockpass;
+    const oidcConfig = await discovery(
+      new URL(issuer),
+      clientId,
+      undefined,
+      PrivateKeyJwt({ key: this.signingKeyPair.privateKey, kid: 'sig-key-1' }),
+      { execute: [allowInsecureRequests] },
+    );
+    allowInsecureRequests(oidcConfig);
+
+    enableDecryptingResponses(oidcConfig, ['A256GCM', 'A256CBC-HS512'], {
+      key: this.encKeyPair.privateKey,
+      alg: 'ECDH-ES+A256KW',
+      kid: 'enc-key-1',
+    });
+
+    this.oidcConfig = oidcConfig;
+    return oidcConfig;
   }
 }
