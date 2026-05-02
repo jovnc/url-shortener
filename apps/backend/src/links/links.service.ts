@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   GoneException,
   Injectable,
   NotFoundException,
@@ -29,8 +30,29 @@ export class LinksService {
     private readonly shortCodeGenerator: ShortCodeGenerator,
   ) {}
 
-  async create(userId: string, originalUrl: string) {
+  async findAllByUser(userId: string) {
+    const links = await this.prisma.link.findMany({
+      where: { userId },
+      select: {
+        id: true,
+        shortCode: true,
+        originalUrl: true,
+        isActive: true,
+        expiresAt: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return links.map((link) => ({
+      ...link,
+      shortUrl: this.buildShortUrl(link.shortCode),
+    }));
+  }
+
+  async create(userId: string, originalUrl: string, expiresAt?: string) {
     const shortCode = await this.shortCodeGenerator.next();
+    const expiry = this.parseFutureExpiry(expiresAt);
 
     try {
       const link = await this.prisma.link.create({
@@ -39,7 +61,7 @@ export class LinksService {
           shortCode,
           originalUrl,
           isActive: true,
-          expiresAt: null,
+          expiresAt: expiry,
         },
         select: {
           id: true,
@@ -69,6 +91,24 @@ export class LinksService {
       }
       throw error;
     }
+  }
+
+  async delete(userId: string, linkId: string) {
+    const link = await this.prisma.link.findFirst({
+      where: { id: linkId, userId },
+      select: { id: true, shortCode: true, isActive: true },
+    });
+
+    if (!link) throw new NotFoundException();
+
+    if (link.isActive) {
+      await this.prisma.link.update({
+        where: { id: link.id },
+        data: { isActive: false },
+      });
+    }
+
+    await this.redisService.del(this.getRedirectCacheKey(link.shortCode));
   }
 
   async resolveRedirect(shortCode: string) {
@@ -136,7 +176,7 @@ export class LinksService {
   }
 
   private resolvePayload(payload: RedirectCachePayload) {
-    if (!payload.isActive) throw new NotFoundException();
+    if (!payload.isActive) throw new GoneException();
     if (
       payload.expiresAt &&
       new Date(payload.expiresAt).getTime() <= Date.now()
@@ -155,6 +195,16 @@ export class LinksService {
       `/api/v1/links/${shortCode}`,
       this.configService.getOrThrow<AppConfig>('app').shortLinkBaseUrl,
     ).toString();
+  }
+
+  private parseFutureExpiry(expiresAt?: string) {
+    if (!expiresAt) return null;
+
+    const expiry = new Date(expiresAt);
+    if (expiry.getTime() <= Date.now()) {
+      throw new BadRequestException('expiresAt must be in the future');
+    }
+    return expiry;
   }
 
   private isUniqueConstraintError(error: unknown) {

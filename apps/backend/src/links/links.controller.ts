@@ -1,8 +1,12 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
+  ParseUUIDPipe,
   Post,
   Req,
   Res,
@@ -24,10 +28,30 @@ interface AuthenticatedRequest extends Request {
 export class LinksController {
   constructor(private readonly linksService: LinksService) {}
 
+  @Get()
+  @UseGuards(JwtGuard)
+  findAll(@Req() req: AuthenticatedRequest) {
+    return this.linksService.findAllByUser(req.user.sub);
+  }
+
   @Post()
   @UseGuards(JwtGuard)
   create(@Req() req: AuthenticatedRequest, @Body() dto: CreateLinkDto) {
-    return this.linksService.create(req.user.sub, dto.originalUrl);
+    return this.linksService.create(
+      req.user.sub,
+      dto.originalUrl,
+      dto.expiresAt,
+    );
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @UseGuards(JwtGuard)
+  delete(
+    @Req() req: AuthenticatedRequest,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.linksService.delete(req.user.sub, id);
   }
 
   @Get(':code')
