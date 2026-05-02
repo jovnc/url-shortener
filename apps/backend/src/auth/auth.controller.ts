@@ -8,7 +8,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import type { Request, Response } from 'express';
+import type { CookieOptions, Request, Response } from 'express';
 import { AuthService } from './auth.service.js';
 import { JwtGuard } from './jwt.guard.js';
 import type { AppConfig } from '../app.config.js';
@@ -27,11 +27,9 @@ const OIDC_COOKIES = [
   'oidc_dpop',
 ] as const;
 
-const OIDC_COOKIE_OPTS = {
-  httpOnly: true,
-  sameSite: 'lax' as const,
-  maxAge: 300_000,
-};
+const COOKIE_PATHS = ['/', '/api/v1/auth'] as const;
+const OIDC_COOKIE_MAX_AGE = 300_000;
+const SESSION_COOKIE_MAX_AGE = 86_400_000;
 
 @Controller('auth')
 export class AuthController {
@@ -46,10 +44,13 @@ export class AuthController {
     const { url, state, nonce, codeVerifier, dpopKeys } =
       await this.authService.buildLoginUrl();
 
-    res.cookie('oidc_state', state, OIDC_COOKIE_OPTS);
-    res.cookie('oidc_nonce', nonce, OIDC_COOKIE_OPTS);
-    res.cookie('oidc_verifier', codeVerifier, OIDC_COOKIE_OPTS);
-    res.cookie('oidc_dpop', JSON.stringify(dpopKeys), OIDC_COOKIE_OPTS);
+    this.clearAuthCookies(res);
+
+    const cookieOptions = this.authCookieOptions(OIDC_COOKIE_MAX_AGE);
+    res.cookie('oidc_state', state, cookieOptions);
+    res.cookie('oidc_nonce', nonce, cookieOptions);
+    res.cookie('oidc_verifier', codeVerifier, cookieOptions);
+    res.cookie('oidc_dpop', JSON.stringify(dpopKeys), cookieOptions);
 
     res.redirect(url);
   }
@@ -86,18 +87,18 @@ export class AuthController {
       dpopKeys,
     );
 
-    OIDC_COOKIES.forEach((name) => res.clearCookie(name));
-    res.cookie('session', sessionToken, {
-      httpOnly: true,
-      sameSite: 'lax',
-      maxAge: 86_400_000,
-    });
+    this.clearAuthCookies(res);
+    res.cookie(
+      'session',
+      sessionToken,
+      this.authCookieOptions(SESSION_COOKIE_MAX_AGE),
+    );
     res.redirect(this.configService.getOrThrow<AppConfig>('app').frontendUrl);
   }
 
   @Post('logout')
   logout(@Res() res: Response) {
-    res.clearCookie('session');
+    COOKIE_PATHS.forEach((path) => res.clearCookie('session', { path }));
     res.sendStatus(200);
   }
 
@@ -105,5 +106,25 @@ export class AuthController {
   @UseGuards(JwtGuard)
   async me(@Req() req: AuthenticatedRequest) {
     return this.authService.findUserById(req.user.sub);
+  }
+
+  private authCookieOptions(maxAge: number): CookieOptions {
+    const { frontendUrl } = this.configService.getOrThrow<AppConfig>('app');
+    const secure = new URL(frontendUrl).protocol === 'https:';
+
+    return {
+      httpOnly: true,
+      sameSite: secure ? 'none' : 'lax',
+      secure,
+      path: '/',
+      maxAge,
+    };
+  }
+
+  private clearAuthCookies(res: Response) {
+    OIDC_COOKIES.forEach((name) =>
+      COOKIE_PATHS.forEach((path) => res.clearCookie(name, { path })),
+    );
+    COOKIE_PATHS.forEach((path) => res.clearCookie('session', { path }));
   }
 }
