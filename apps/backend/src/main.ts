@@ -12,19 +12,19 @@ async function bootstrap() {
   const configService = app.get(ConfigService);
   const { port, frontendUrl } = configService.getOrThrow<AppConfig>('app');
 
-  // Swagger setup
-  const config = new DocumentBuilder()
-    .setTitle('Server Monitor API')
-    .setDescription('The server monitor API description')
-    .setVersion('1.0')
-    .build();
-  const documentFactory = () => SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, documentFactory);
-
   // Bootstrap configuration
   app.setGlobalPrefix('api/v1', {
     exclude: ['.well-known/*path'],
   });
+
+  // Swagger setup
+  const config = new DocumentBuilder()
+    .setTitle('URL Shortener API')
+    .setDescription('API documentation for URL shortening and authentication')
+    .setVersion('1.0')
+    .build();
+  const documentFactory = () => SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api', app, documentFactory);
 
   app.enableCors({
     origin: frontendUrl,
@@ -34,7 +34,7 @@ async function bootstrap() {
   app.use(cookieParser());
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
 
-  await app.listen(port);
+  await app.listen(port, '0.0.0.0');
 }
 
 void bootstrap();
