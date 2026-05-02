@@ -192,7 +192,7 @@ export class LinksService {
 
   private buildShortUrl(shortCode: string) {
     return new URL(
-      `/api/v1/links/${shortCode}`,
+      `/${shortCode}`,
       this.configService.getOrThrow<AppConfig>('app').shortLinkBaseUrl,
     ).toString();
   }

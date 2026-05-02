@@ -18,7 +18,9 @@ export const appConfig = registerAs('app', () => {
     port: parseInt(process.env.PORT ?? '3001', 10),
     frontendUrl: process.env.FRONTEND_URL ?? 'http://localhost:3000',
     shortLinkBaseUrl:
-      process.env.SHORT_LINK_BASE_URL ?? 'http://localhost:3001',
+      process.env.SHORT_LINK_BASE_URL ??
+      process.env.FRONTEND_URL ??
+      'http://localhost:3000',
     jwtSecret: process.env.JWT_SECRET!,
     databaseUrl: process.env.DATABASE_URL!,
     redisUrl: process.env.REDIS_URL!,
