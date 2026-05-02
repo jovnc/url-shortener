@@ -23,4 +23,4 @@ RUN pnpm install --frozen-lockfile --filter backend...
 ENV NODE_ENV=production
 COPY --from=builder /app/apps/backend/dist ./apps/backend/dist
 EXPOSE 3001
-CMD ["sh", "-c", "cd /app/apps/backend && /app/node_modules/.bin/prisma migrate deploy && node dist/src/main.js"]
+CMD ["sh", "-c", "pnpm --filter backend run db:migrate:deploy && pnpm --filter backend run start:prod"]
