@@ -7,16 +7,26 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import type { Request } from 'express';
 
+interface SessionPayload {
+  sub: string;
+  singpassSub: string;
+}
+
+interface SessionRequest extends Omit<Request, 'cookies'> {
+  cookies: Record<string, unknown>;
+  user?: SessionPayload;
+}
+
 @Injectable()
 export class JwtGuard implements CanActivate {
   constructor(private readonly jwtService: JwtService) {}
 
   canActivate(context: ExecutionContext): boolean {
-    const req = context.switchToHttp().getRequest<Request>();
-    const token = (req.cookies as Record<string, string>)?.['session'];
-    if (!token) throw new UnauthorizedException();
+    const req = context.switchToHttp().getRequest<SessionRequest>();
+    const token = req.cookies?.['session'];
+    if (typeof token !== 'string') throw new UnauthorizedException();
     try {
-      (req as Request & { user: unknown }).user = this.jwtService.verify(token);
+      req.user = this.jwtService.verify<SessionPayload>(token);
     } catch {
       throw new UnauthorizedException();
     }
