@@ -4,8 +4,8 @@ import { useState } from "react";
 import { ShieldCheck } from "lucide-react";
 import { LinkCard } from "./link-card";
 import { LinkCardSkeleton } from "./link-card-skeleton";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { pillControl } from "@/lib/styles";
 import { cn } from "@/lib/utils";
 import type { Link } from "@/lib/types";
@@ -48,24 +48,22 @@ export function LinkList({
   return (
     <section className="mt-5 grid gap-3" aria-label="Short links">
       <div className="flex items-center justify-between gap-3 max-sm:flex-col max-sm:items-stretch">
-        <div className={cn("flex w-fit max-sm:w-full", pillControl)}>
-          {FILTERS.map((item) => (
-            <Button
-              key={item.id}
-              type="button"
-              variant="ghost"
-              onClick={() => setFilter(item.id)}
-              className={cn(
-                "h-8 flex-1 rounded-full px-3 text-xs font-semibold hover:bg-white",
-                filter === item.id
-                  ? "bg-white text-ink shadow-[0_1px_2px_rgb(0_0_0/0.06)]"
-                  : "text-[#7A6F5C]",
-              )}
-            >
-              {item.label}
-            </Button>
-          ))}
-        </div>
+        <Tabs
+          value={filter}
+          onValueChange={(v) => setFilter(v as StatusFilter)}
+        >
+          <TabsList className={cn("max-sm:w-full", pillControl)}>
+            {FILTERS.map((item) => (
+              <TabsTrigger
+                key={item.id}
+                value={item.id}
+                className="text-xs font-semibold text-[#7A6F5C] data-active:bg-white data-active:text-ink data-active:shadow-[0_1px_2px_rgb(0_0_0/0.06)]"
+              >
+                {item.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
       </div>
 
       {loading ? (
