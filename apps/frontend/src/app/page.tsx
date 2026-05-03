@@ -1,50 +1,27 @@
 'use client';
 
-import { FormEvent, useEffect, useState } from 'react';
-
-interface User {
-  id: string;
-  sub: string;
-  name: string | null;
-}
-
-interface Link {
-  id: string;
-  shortCode: string;
-  shortUrl: string;
-  originalUrl: string;
-  isActive: boolean;
-  expiresAt: string | null;
-  createdAt: string;
-}
-
-async function readError(response: Response) {
-  try {
-    const data = (await response.json()) as { message?: string | string[] };
-    if (Array.isArray(data.message)) return data.message.join(', ');
-    if (data.message) return data.message;
-  } catch {
-    // Fall back to the status text below.
-  }
-
-  return response.statusText || 'Something went wrong';
-}
+import { useEffect, useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
+import { readError } from '@/lib/api';
+import { warmCard, tallInput } from '@/lib/styles';
+import { Topbar } from '@/components/topbar';
+import { CreateLinkForm } from '@/components/links/create-link-form';
+import { LinkList } from '@/components/links/link-list';
+import type { User, Link } from '@/lib/types';
 
 export default function Home() {
   const [user, setUser] = useState<User | null>(null);
   const [links, setLinks] = useState<Link[]>([]);
-  const [originalUrl, setOriginalUrl] = useState('');
-  const [expiresAt, setExpiresAt] = useState('');
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
     async function load() {
       try {
-        const meResponse = await fetch('/api/auth/me', {
-          credentials: 'include',
-        });
+        const meResponse = await fetch('/api/auth/me', { credentials: 'include' });
 
         if (!meResponse.ok) {
           setUser(null);
@@ -54,12 +31,8 @@ export default function Home() {
         const currentUser = (await meResponse.json()) as User;
         setUser(currentUser);
 
-        const linksResponse = await fetch('/api/links', {
-          credentials: 'include',
-        });
-
+        const linksResponse = await fetch('/api/links', { credentials: 'include' });
         if (!linksResponse.ok) throw new Error(await readError(linksResponse));
-
         setLinks((await linksResponse.json()) as Link[]);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Unable to load app');
@@ -71,80 +44,59 @@ export default function Home() {
     void load();
   }, []);
 
-  async function createLink(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setSaving(true);
-    setError('');
-
-    try {
-      const response = await fetch('/api/links', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          originalUrl,
-          ...(expiresAt ? { expiresAt: new Date(expiresAt).toISOString() } : {}),
-        }),
-      });
-
-      if (!response.ok) throw new Error(await readError(response));
-
-      const link = (await response.json()) as Link;
-      setLinks((current) => [link, ...current]);
-      setOriginalUrl('');
-      setExpiresAt('');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to create link');
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function deleteLink(id: string) {
-    setError('');
-
-    try {
-      const response = await fetch(`/api/links/${id}`, {
-        method: 'DELETE',
-        credentials: 'include',
-      });
-
-      if (!response.ok) throw new Error(await readError(response));
-
-      setLinks((current) =>
-        current.map((link) =>
-          link.id === id ? { ...link, isActive: false } : link,
-        ),
-      );
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to delete link');
-    }
-  }
-
   async function logout() {
-    await fetch('/api/auth/logout', {
-      method: 'POST',
-      credentials: 'include',
-    });
+    await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
     setUser(null);
     setLinks([]);
   }
 
   if (loading) {
-    return <main className="shell">Loading...</main>;
+    return (
+      <main className="shell">
+        <header className="topbar">
+          <div>
+            <Skeleton className="h-3 w-24 bg-[var(--line)] mb-3" />
+            <Skeleton className="h-14 w-32 bg-[var(--line)]" />
+          </div>
+          <Skeleton className="h-9 w-40 rounded-full bg-[var(--line)] self-start mt-2" />
+        </header>
+
+        <Card className={warmCard}>
+          <CardContent className="pt-5 pb-5">
+            <div className="grid grid-cols-[1fr_220px_auto] items-end gap-3.5 max-[760px]:grid-cols-1">
+              <div className="grid gap-2">
+                <Skeleton className="h-3 w-28 bg-[var(--line)]" />
+                <Skeleton className={cn(tallInput, 'bg-[var(--line)]')} />
+              </div>
+              <div className="grid gap-2">
+                <Skeleton className="h-3 w-24 bg-[var(--line)]" />
+                <Skeleton className={cn(tallInput, 'bg-[var(--line)]')} />
+              </div>
+              <Skeleton className="h-[46px] w-[160px] rounded-full bg-[var(--line)]" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <LinkList links={[]} loading onDisable={() => {}} />
+      </main>
+    );
   }
 
   if (!user) {
     return (
       <main className="shell auth-card">
         <p className="eyebrow">URL Shortener</p>
-        <h1>Short links, no clutter.</h1>
+        <h1>
+          Short links,
+          <br />
+          no clutter.
+        </h1>
         <p className="muted">Sign in to create and manage your short links.</p>
-        {error ? <p className="error">{error}</p> : null}
+        {error && <p className="error">{error}</p>}
         <form action="/api/auth/login" method="get">
-          <button className="button primary" type="submit">
+          <Button type="submit" className="h-11 rounded-full px-6 text-base">
             Login with Singpass
-          </button>
+          </Button>
         </form>
       </main>
     );
@@ -152,87 +104,19 @@ export default function Home() {
 
   return (
     <main className="shell">
-      <header className="topbar">
-        <div>
-          <p className="eyebrow">URL Shortener</p>
-          <h1>Links</h1>
-        </div>
-        <div className="account">
-          <span>{user.name ?? user.sub}</span>
-          <button className="button" type="button" onClick={logout}>
-            Logout
-          </button>
-        </div>
-      </header>
-
-      <form className="card form" onSubmit={createLink}>
-        <label>
-          Destination URL
-          <input
-            required
-            type="url"
-            placeholder="https://example.com/long-url"
-            value={originalUrl}
-            onChange={(event) => setOriginalUrl(event.target.value)}
-          />
-        </label>
-        <label>
-          Expiry, optional
-          <input
-            type="datetime-local"
-            value={expiresAt}
-            onChange={(event) => setExpiresAt(event.target.value)}
-          />
-        </label>
-        <button className="button primary" disabled={saving} type="submit">
-          {saving ? 'Creating...' : 'Create short link'}
-        </button>
-      </form>
-
-      {error ? <p className="error">{error}</p> : null}
-
-      <section className="list" aria-label="Short links">
-        {links.length === 0 ? (
-          <div className="card empty">No links yet.</div>
-        ) : (
-          links.map((link) => (
-            <article className="card link-card" key={link.id}>
-              <div className="link-main">
-                <a href={link.shortUrl} target="_blank" rel="noreferrer">
-                  {link.shortUrl}
-                </a>
-                <p>{link.originalUrl}</p>
-              </div>
-              <div className="meta">
-                <span className={link.isActive ? 'status' : 'status inactive'}>
-                  {link.isActive ? 'Active' : 'Inactive'}
-                </span>
-                {link.expiresAt ? (
-                  <span>Expires {new Date(link.expiresAt).toLocaleString()}</span>
-                ) : null}
-              </div>
-              <div className="actions">
-                <button
-                  className="button"
-                  type="button"
-                  onClick={() => navigator.clipboard.writeText(link.shortUrl)}
-                >
-                  Copy
-                </button>
-                {link.isActive ? (
-                  <button
-                    className="button danger"
-                    type="button"
-                    onClick={() => deleteLink(link.id)}
-                  >
-                    Disable
-                  </button>
-                ) : null}
-              </div>
-            </article>
-          ))
-        )}
-      </section>
+      <Topbar user={user} links={links} onLogout={logout} />
+      {error && <p className="error mb-4 text-sm">{error}</p>}
+      <CreateLinkForm
+        onCreated={(link) => setLinks((current) => [link, ...current])}
+      />
+      <LinkList
+        links={links}
+        onDisable={(id) =>
+          setLinks((current) =>
+            current.map((l) => (l.id === id ? { ...l, isActive: false } : l)),
+          )
+        }
+      />
     </main>
   );
 }
