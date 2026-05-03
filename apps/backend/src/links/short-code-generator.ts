@@ -3,7 +3,7 @@ import { PrismaService } from '../database/prisma.service.js';
 import { RedisService } from '../redis/redis.service.js';
 
 const BASE62_ALPHABET =
-  '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
 const COUNTER_KEY = 'links:counter';
 
 @Injectable()
@@ -23,7 +23,7 @@ export class ShortCodeGenerator {
             'Short-code counter is not initialized',
           );
         }
-        await this.redis.setNx(COUNTER_KEY, '0');
+        await this.redis.setNx(COUNTER_KEY, '61');
       }
 
       const counter = await this.redis.incr(COUNTER_KEY);
