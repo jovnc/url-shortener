@@ -31,12 +31,14 @@ interface CreateLinkFormProps {
 export function CreateLinkForm({ onCreated }: CreateLinkFormProps) {
   const [url, setUrl] = useState('');
   const [expiry, setExpiry] = useState<ExpiryPreset>('never');
+  const [customCode, setCustomCode] = useState('');
   const [advanced, setAdvanced] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
   const validUrl = /^https?:\/\/.+/.test(url);
-  const canSubmit = validUrl && !saving;
+  const validCustomCode = customCode === '' || (/^[0-9a-zA-Z-]+$/.test(customCode) && customCode.length >= 3);
+  const canSubmit = validUrl && validCustomCode && !saving;
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -50,7 +52,11 @@ export function CreateLinkForm({ onCreated }: CreateLinkFormProps) {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ originalUrl: url, ...(expiresAt ? { expiresAt } : {}) }),
+        body: JSON.stringify({
+          originalUrl: url,
+          ...(expiresAt ? { expiresAt } : {}),
+          ...(customCode ? { customShortCode: customCode } : {}),
+        }),
       });
 
       if (!response.ok) throw new Error(await readError(response));
@@ -59,6 +65,7 @@ export function CreateLinkForm({ onCreated }: CreateLinkFormProps) {
       onCreated(link);
       setUrl('');
       setExpiry('never');
+      setCustomCode('');
       setAdvanced(false);
       toast.success('Short link created!');
     } catch (err) {
@@ -165,6 +172,39 @@ export function CreateLinkForm({ onCreated }: CreateLinkFormProps) {
                   </button>
                 ))}
               </div>
+            </div>
+
+            {/* Custom short code */}
+            <div>
+              <div style={{
+                fontSize: 11, fontWeight: 700, letterSpacing: '0.08em',
+                textTransform: 'uppercase', color: '#9A8E78', marginBottom: 7,
+              }}>
+                Custom alias <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(optional)</span>
+              </div>
+              <div style={{
+                display: 'flex', alignItems: 'center', height: 52, padding: '0 14px',
+                borderRadius: 10, background: '#FDFCF9',
+                border: `1.5px solid ${customCode && !validCustomCode ? '#E5A7A7' : '#E5DFD6'}`,
+                transition: 'border-color 160ms',
+              }}>
+                <input
+                  type="text"
+                  value={customCode}
+                  onChange={e => setCustomCode(e.target.value)}
+                  placeholder="my-link"
+                  maxLength={50}
+                  style={{
+                    flex: 1, border: 'none', outline: 'none', background: 'transparent',
+                    fontSize: 15, color: '#1A1714', fontFamily: 'inherit',
+                  }}
+                />
+              </div>
+              {customCode && !validCustomCode && (
+                <p style={{ margin: '4px 0 0', fontSize: 12, color: '#C1242C' }}>
+                  Min 3 chars, letters, numbers, and hyphens only
+                </p>
+              )}
             </div>
           </div>
         )}

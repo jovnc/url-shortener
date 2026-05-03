@@ -41,6 +41,7 @@ export class LinksController {
       req.user.sub,
       dto.originalUrl,
       dto.expiresAt,
+      dto.customShortCode,
     );
   }
 

@@ -5,6 +5,9 @@ import { RedisService } from '../redis/redis.service.js';
 const BASE62_ALPHABET =
   'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
 const COUNTER_KEY = 'links:counter';
+const MIN_CODE_LENGTH = 6;
+// 62^5 - 1: first INCR yields 62^5, which encodes naturally to 6 chars
+const COUNTER_SEED = 62 ** 5 - 1;
 
 @Injectable()
 export class ShortCodeGenerator {
@@ -23,7 +26,7 @@ export class ShortCodeGenerator {
             'Short-code counter is not initialized',
           );
         }
-        await this.redis.setNx(COUNTER_KEY, '61');
+        await this.redis.setNx(COUNTER_KEY, String(COUNTER_SEED));
       }
 
       const counter = await this.redis.incr(COUNTER_KEY);
@@ -37,13 +40,17 @@ export class ShortCodeGenerator {
   }
 
   private encode(value: number): string {
-    if (value === 0) return BASE62_ALPHABET[0];
+    if (value === 0) return BASE62_ALPHABET[0].repeat(MIN_CODE_LENGTH);
 
     let remaining = value;
     let encoded = '';
     while (remaining > 0) {
       encoded = BASE62_ALPHABET[remaining % 62] + encoded;
       remaining = Math.floor(remaining / 62);
+    }
+
+    while (encoded.length < MIN_CODE_LENGTH) {
+      encoded = BASE62_ALPHABET[0] + encoded;
     }
     return encoded;
   }

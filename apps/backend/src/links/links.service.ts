@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   GoneException,
   Injectable,
   NotFoundException,
@@ -11,7 +12,10 @@ import { RedisService } from '../redis/redis.service.js';
 import type { AppConfig } from '../app.config.js';
 import { ShortCodeGenerator } from './short-code-generator.js';
 
-const BASE62_PATTERN = /^[0-9a-zA-Z]+$/;
+const SHORT_CODE_PATTERN = /^[0-9a-zA-Z-]+$/;
+const RESERVED_CODES = new Set([
+  'api', 'auth', 'health', 'links', 'login', 'logout', 'me',
+]);
 const REDIRECT_CACHE_PREFIX = 'links:redirect:';
 const REDIRECT_CACHE_TTL_SECONDS = 15 * 60;
 
@@ -50,8 +54,17 @@ export class LinksService {
     }));
   }
 
-  async create(userId: string, originalUrl: string, expiresAt?: string) {
-    const shortCode = await this.shortCodeGenerator.next();
+  async create(
+    userId: string,
+    originalUrl: string,
+    expiresAt?: string,
+    customShortCode?: string,
+  ) {
+    if (customShortCode && RESERVED_CODES.has(customShortCode.toLowerCase())) {
+      throw new BadRequestException('That short code is reserved');
+    }
+
+    const shortCode = customShortCode ?? (await this.shortCodeGenerator.next());
     const expiry = this.parseFutureExpiry(expiresAt);
 
     try {
@@ -85,9 +98,10 @@ export class LinksService {
       };
     } catch (error) {
       if (this.isUniqueConstraintError(error)) {
-        throw new ServiceUnavailableException(
-          'Short-code counter state is invalid',
-        );
+        if (customShortCode) {
+          throw new ConflictException('That short code is already taken');
+        }
+        throw new ServiceUnavailableException('Short-code counter state is invalid');
       }
       throw error;
     }
@@ -112,7 +126,7 @@ export class LinksService {
   }
 
   async resolveRedirect(shortCode: string) {
-    if (!BASE62_PATTERN.test(shortCode)) throw new NotFoundException();
+    if (!SHORT_CODE_PATTERN.test(shortCode)) throw new NotFoundException();
 
     const cached = await this.getCachedRedirectPayload(shortCode);
     if (cached) return this.resolvePayload(cached);
