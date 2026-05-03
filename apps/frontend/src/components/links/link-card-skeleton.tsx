@@ -13,11 +13,11 @@ export function LinkCardSkeleton() {
         </div>
         <Skeleton className="h-3.5 w-64 max-w-full bg-[--line]" />
       </div>
-      <div className="meta shrink-0">
+      <div className="grid shrink-0 gap-1.5 text-right">
         <Skeleton className="h-6 w-14 rounded-full bg-[--line] justify-self-end" />
         <Skeleton className="h-3 w-20 bg-[--line]" />
       </div>
-      <div className="actions shrink-0">
+      <div className="flex shrink-0 gap-2">
         <Skeleton className="h-7 w-16 rounded-full bg-[--line]" />
       </div>
     </Card>

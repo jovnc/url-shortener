@@ -1,18 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Check,
-  Copy,
-  ExternalLink,
-  QrCode,
-  ShieldCheck,
-  Trash2,
-} from "lucide-react";
+import { Check, Copy, ExternalLink, QrCode, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { readError } from "@/lib/api";
 import { QRBlock } from "@/components/qr-block";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -64,16 +56,13 @@ function DeleteModal({ link, onConfirm, onCancel }: DeleteModalProps) {
     >
       <Card
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-[440px] animate-[trace-pop-in_240ms_cubic-bezier(0.2,0.8,0.2,1)] border-0 bg-white p-7 shadow-[0_30px_80px_rgb(0_0_0/0.25)]"
+        className="w-full max-w-110 animate-[trace-pop-in_240ms_cubic-bezier(0.2,0.8,0.2,1)] border-0 bg-white p-7 shadow-[0_30px_80px_rgb(0_0_0/0.25)]"
       >
-        <div className="mb-4 flex size-11 items-center justify-center rounded-xl bg-(--red-tint) text-(--red-deeper)">
-          <Trash2 className="size-5" />
-        </div>
-        <h3 className="mb-1.5 text-lg font-bold tracking-[-0.01em] text-(--app-foreground)">
+        <h3 className="mb-1.5 text-lg font-bold tracking-[-0.01em] text-ink">
           Disable this link?
         </h3>
         <p className="mb-5 text-sm leading-normal text-[#7A6F5C]">
-          <span className="font-mono text-(--app-foreground)">
+          <span className="font-mono text-ink">
             {shortHost(link.shortUrl)}/{link.shortCode}
           </span>{" "}
           will stop redirecting immediately.
@@ -82,13 +71,13 @@ function DeleteModal({ link, onConfirm, onCancel }: DeleteModalProps) {
           <Button
             variant="outline"
             onClick={onCancel}
-            className="h-10 border-(--line) bg-white px-4.5 text-sm font-semibold text-(--app-foreground)"
+            className="h-10 border-line bg-white px-4.5 text-sm font-semibold text-ink"
           >
             Cancel
           </Button>
           <Button
             onClick={onConfirm}
-            className="h-10 bg-(--red-primary) px-4.5 text-sm font-semibold text-white hover:bg-(--red-dark)"
+            className="h-10 bg-brand px-4.5 text-sm font-semibold text-white hover:bg-brand-dark"
           >
             Disable link
           </Button>
@@ -109,6 +98,13 @@ export function LinkCard({ link, isNew, onDisable }: LinkCardProps) {
     : expired
       ? "expired"
       : "active";
+  const canShare = status === "active";
+  const statusLabel =
+    status === "active"
+      ? "Active"
+      : status === "expired"
+        ? "Expired"
+        : "Disabled";
 
   const host = shortHost(link.shortUrl);
 
@@ -140,60 +136,60 @@ export function LinkCard({ link, isNew, onDisable }: LinkCardProps) {
     <>
       <Card
         className={cn(
-          "rounded-xl border-(--line) bg-white p-6 transition-[border-color,box-shadow] hover:border-[#D9D2C5] hover:shadow-[0_8px_30px_rgb(31_27_20/0.06)]",
+          "overflow-hidden rounded-2xl border-line bg-white p-0 transition-[border-color,box-shadow,transform] hover:-translate-y-0.5 hover:border-[#D9D2C5] hover:shadow-[0_18px_50px_rgb(31_27_20/0.08)]",
+          status !== "active" && "bg-[#FBF9F5]",
           isNew && "animate-[trace-slide-in_380ms_cubic-bezier(0.2,0.8,0.2,1)]",
         )}
       >
-        <div className="grid grid-cols-[1fr_auto] items-center gap-5 max-sm:grid-cols-1 max-sm:items-stretch">
-          <div className="min-w-0">
-            <div className="mb-1.5 flex items-center gap-2">
+        <div
+          className={cn(
+            "grid items-stretch",
+            canShare
+              ? "grid-cols-[4px_1fr_auto] max-sm:grid-cols-[4px_1fr]"
+              : "grid-cols-[4px_1fr]",
+          )}
+        >
+          <div
+            className={cn(
+              "w-full",
+              status === "active" ? "bg-[#3CA45E]" : "bg-[#D8D0C1]",
+            )}
+            aria-hidden="true"
+          />
+
+          <div className="min-w-0 px-5 py-4.5 sm:px-6 sm:py-5">
+            <div className="mb-2 flex min-w-0 flex-wrap items-center gap-2">
               <span
                 className={cn(
-                  "truncate font-mono text-lg font-bold tracking-[-0.01em]",
+                  "min-w-0 truncate font-mono text-lg font-bold tracking-[-0.01em] sm:text-xl",
                   status !== "active" && "line-through decoration-[#9A8E78]",
                 )}
               >
                 <span className="font-medium text-[#9A8E78]">{host}/</span>
                 <span
                   className={cn(
-                    status === "active"
-                      ? "text-(--red-primary)"
-                      : "text-[#9A8E78]",
+                    status === "active" ? "text-[#1d6a38]" : "text-[#9A8E78]",
                   )}
                 >
                   {link.shortCode}
                 </span>
               </span>
-              {status === "expired" && (
-                <Badge className="h-auto rounded bg-[#F5F1E8] px-1.5 py-0.5 text-[10px] font-bold tracking-[0.04em] text-[#7A6F5C] uppercase">
-                  Expired
-                </Badge>
-              )}
-              {status === "inactive" && (
-                <Badge className="h-auto rounded bg-[#F5F1E8] px-1.5 py-0.5 text-[10px] font-bold tracking-[0.04em] text-[#7A6F5C] uppercase">
-                  Disabled
-                </Badge>
-              )}
             </div>
 
-            <div className="flex items-center gap-1.5 truncate text-[13px] text-[#7A6F5C]">
+            <div className="flex items-center gap-1.5 truncate rounded-lg bg-[#F8F5EF] px-2.5 py-2 text-[13px] text-[#7A6F5C]">
               <ExternalLink className="size-3 shrink-0 text-[#9A8E78]" />
               <span className="truncate">{link.originalUrl}</span>
             </div>
 
-            <div className="mt-2.5 flex flex-wrap items-center gap-3.5 text-xs text-[#9A8E78]">
-              <span className="inline-flex items-center gap-1.5 font-semibold text-(--app-foreground)">
+            <div className="mt-3 flex flex-wrap items-center gap-x-3.5 gap-y-1.5 text-xs text-[#9A8E78]">
+              <span className="inline-flex items-center gap-1.5 font-semibold text-[#7A6F5C]">
                 <span
                   className={cn(
                     "size-1.5 rounded-full",
                     status === "active" ? "bg-[#3CA45E]" : "bg-[#C9C0AE]",
                   )}
                 />
-                {status === "active"
-                  ? "Active"
-                  : status === "expired"
-                    ? "Expired"
-                    : "Inactive"}
+                {statusLabel}
               </span>
               <span>·</span>
               <span>Created {fmtRelative(link.createdAt)}</span>
@@ -205,69 +201,63 @@ export function LinkCard({ link, isNew, onDisable }: LinkCardProps) {
                   </span>
                 </>
               )}
-              <span className="flex-1" />
-              <span className="inline-flex items-center gap-1 font-semibold text-(--red-dark)">
-                <ShieldCheck className="size-3" />
-                Verified
-              </span>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="icon-lg"
-              onClick={() => setQrOpen(!qrOpen)}
-              title="QR code"
-              className={cn(
-                "size-10 border-(--line)",
-                qrOpen
-                  ? "bg-[#F5F1E8] text-(--app-foreground)"
-                  : "bg-white text-[#7A6F5C]",
-              )}
-            >
-              <QrCode className="size-4" />
-            </Button>
+          {canShare && (
+            <div className="flex items-center gap-2 px-5 py-4.5 max-sm:col-start-2 max-sm:pt-0 sm:px-6 sm:py-5">
+              <Button
+                variant="outline"
+                size="icon-lg"
+                onClick={() => setQrOpen(!qrOpen)}
+                title="QR code"
+                className={cn(
+                  "size-10 border-line shadow-[0_1px_0_rgb(31_27_20/0.04)]",
+                  qrOpen
+                    ? "bg-[#F5F1E8] text-ink"
+                    : "bg-white text-[#7A6F5C] hover:text-ink",
+                )}
+              >
+                <QrCode className="size-4" />
+              </Button>
 
-            <Button
-              variant="outline"
-              onClick={handleCopy}
-              className={cn(
-                "h-10 gap-1.5 px-3.5 text-[13px] font-semibold",
-                copied
-                  ? "border-[#A9D5BC] bg-[#EAF6EE] text-[#1d6a38]"
-                  : "border-(--line) bg-white text-(--app-foreground)",
-              )}
-            >
-              {copied ? (
-                <Check className="size-4" />
-              ) : (
-                <Copy className="size-4" />
-              )}
-              {copied ? "Copied" : "Copy"}
-            </Button>
+              <Button
+                variant="outline"
+                onClick={handleCopy}
+                className={cn(
+                  "h-10 gap-1.5 border-line px-3.5 text-[13px] font-semibold shadow-[0_1px_0_rgb(31_27_20/0.04)]",
+                  copied
+                    ? "border-[#A9D5BC] bg-[#EAF6EE] text-[#1d6a38]"
+                    : "bg-white text-ink",
+                )}
+              >
+                {copied ? (
+                  <Check className="size-4" />
+                ) : (
+                  <Copy className="size-4" />
+                )}
+              </Button>
 
-            {link.isActive && !expired && (
               <Button
                 variant="outline"
                 size="icon-lg"
                 onClick={() => setConfirmDelete(true)}
                 title="Disable"
-                className="size-10 border-(--line) bg-white text-[#9A8E78] hover:border-[#E5A7A7] hover:bg-[#FFF0EE] hover:text-(--red-dark)"
+                className="size-10 border-line bg-white text-[#9A8E78] hover:border-[#E5A7A7] hover:bg-[#FFF0EE] hover:text-brand-dark"
               >
                 <Trash2 className="size-4" />
               </Button>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
-        {qrOpen && (
-          <div className="mt-4.5 flex animate-[trace-fade-in_240ms_ease-out] items-center gap-5 border-t border-dashed border-(--line-soft) pt-4.5 max-sm:flex-col max-sm:items-start">
-            <div className="shrink-0 rounded-[10px] border border-(--line) bg-white p-2.5">
+        {canShare && qrOpen && (
+          <div className="mx-5 mb-5 flex animate-[trace-fade-in_240ms_ease-out] items-center gap-5 border-t border-dashed border-line-soft pt-4.5 max-sm:flex-col max-sm:items-start sm:mx-6">
+            <div className="shrink-0 rounded-[10px] border border-line bg-white p-2.5">
               <QRBlock value={link.shortUrl} size={108} />
             </div>
             <div className="flex-1">
-              <div className="mb-1 text-[13px] font-semibold text-(--app-foreground)">
+              <div className="mb-1 text-[13px] font-semibold text-ink">
                 Scan or share
               </div>
               <p className="max-w-[360px] text-[13px] leading-normal text-[#7A6F5C]">

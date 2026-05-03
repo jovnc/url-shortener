@@ -6,6 +6,7 @@ import { LinkCard } from "./link-card";
 import { LinkCardSkeleton } from "./link-card-skeleton";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { pillControl } from "@/lib/styles";
 import { cn } from "@/lib/utils";
 import type { Link } from "@/lib/types";
 
@@ -47,7 +48,7 @@ export function LinkList({
   return (
     <section className="mt-5 grid gap-3" aria-label="Short links">
       <div className="flex items-center justify-between gap-3 max-sm:flex-col max-sm:items-stretch">
-        <div className="flex w-fit rounded-full bg-[#F5F1E8] p-1 max-sm:w-full">
+        <div className={cn("flex w-fit max-sm:w-full", pillControl)}>
           {FILTERS.map((item) => (
             <Button
               key={item.id}
@@ -57,7 +58,7 @@ export function LinkList({
               className={cn(
                 "h-8 flex-1 rounded-full px-3 text-xs font-semibold hover:bg-white",
                 filter === item.id
-                  ? "bg-white text-(--app-foreground) shadow-[0_1px_2px_rgb(0_0_0/0.06)]"
+                  ? "bg-white text-ink shadow-[0_1px_2px_rgb(0_0_0/0.06)]"
                   : "text-[#7A6F5C]",
               )}
             >
@@ -74,12 +75,12 @@ export function LinkList({
           <LinkCardSkeleton />
         </>
       ) : filteredLinks.length === 0 ? (
-        <Card className="items-center gap-3 rounded-xl border-(--line) bg-white px-6 py-14 text-center">
-          <div className="flex size-13 items-center justify-center rounded-xl bg-(--red-tint)">
-            <ShieldCheck className="size-6 text-(--red-primary)" />
+        <Card className="items-center gap-3 rounded-xl border-line bg-white px-6 py-14 text-center">
+          <div className="flex size-13 items-center justify-center rounded-xl bg-brand-tint">
+            <ShieldCheck className="size-6 text-brand" />
           </div>
           <div>
-            <p className="font-semibold text-(--app-foreground)">
+            <p className="font-semibold text-ink">
               {links.length === 0 ? "No links yet" : `No ${filter} links`}
             </p>
             <p className="mt-1 text-[13px] text-[#7A6F5C]">

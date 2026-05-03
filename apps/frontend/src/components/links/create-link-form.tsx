@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { panelCard } from "@/lib/styles";
 import { cn } from "@/lib/utils";
 import type { Link } from "@/lib/types";
 
@@ -39,7 +40,6 @@ export function CreateLinkForm({ onCreated }: CreateLinkFormProps) {
   const [customCode, setCustomCode] = useState("");
   const [advanced, setAdvanced] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
 
   const validUrl = /^https?:\/\/.+/.test(url);
   const validCustomCode =
@@ -51,7 +51,6 @@ export function CreateLinkForm({ onCreated }: CreateLinkFormProps) {
     event.preventDefault();
     if (!canSubmit) return;
     setSaving(true);
-    setError("");
 
     try {
       const expiresAt = expiryToDate(expiry);
@@ -76,7 +75,7 @@ export function CreateLinkForm({ onCreated }: CreateLinkFormProps) {
       setAdvanced(false);
       toast.success("Short link created!");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to create link");
+      toast.error(err instanceof Error ? err.message : "Unable to create link");
     } finally {
       setSaving(false);
     }
@@ -84,11 +83,11 @@ export function CreateLinkForm({ onCreated }: CreateLinkFormProps) {
 
   return (
     <div className="grid gap-2">
-      <Card className="rounded-2xl border-(--line) bg-white p-7 shadow-[0_1px_0_rgb(0_0_0/0.02),0_12px_32px_rgb(31_27_20/0.04)]">
+      <Card className={cn(panelCard, "p-7")}>
         <form onSubmit={handleSubmit}>
           <div className="mb-5 flex items-baseline justify-between gap-4 max-sm:flex-col max-sm:items-start">
             <div>
-              <h2 className="text-xl font-bold tracking-[-0.015em] text-(--app-foreground)">
+              <h2 className="text-xl font-bold tracking-[-0.015em] text-ink">
                 New short link
               </h2>
               <p className="mt-1 text-[13px] text-[#7A6F5C]">
@@ -99,7 +98,7 @@ export function CreateLinkForm({ onCreated }: CreateLinkFormProps) {
               variant="ghost"
               type="button"
               onClick={() => setAdvanced(!advanced)}
-              className="h-auto shrink-0 p-0 text-[13px] font-semibold text-(--red-primary) hover:bg-transparent hover:text-(--red-dark)"
+              className="h-auto shrink-0 p-0 text-[13px] font-semibold text-brand hover:bg-transparent hover:text-brand-dark"
             >
               {advanced ? "Hide options" : "Advanced options"}
             </Button>
@@ -111,8 +110,8 @@ export function CreateLinkForm({ onCreated }: CreateLinkFormProps) {
             </Label>
             <div
               className={cn(
-                "flex h-13 items-center gap-2.5 rounded-[10px] border-[1.5px] bg-(--app-background) px-3.5 transition-colors",
-                url && !validUrl ? "border-[#E5A7A7]" : "border-(--line-soft)",
+                "flex h-13 items-center gap-2.5 rounded-[10px] border-[1.5px] bg-surface px-3.5 transition-colors",
+                url && !validUrl ? "border-[#E5A7A7]" : "border-line-soft",
               )}
             >
               <Link2 className="size-4.5 shrink-0 text-[#9A8E78]" />
@@ -122,7 +121,7 @@ export function CreateLinkForm({ onCreated }: CreateLinkFormProps) {
                 onChange={(e) => setUrl(e.target.value)}
                 placeholder="https://example.com/very-long-url"
                 required
-                className="h-full min-w-0 flex-1 border-0 bg-transparent p-0 text-[15px] text-(--app-foreground) outline-none placeholder:text-[#9A8E78] focus:ring-0"
+                className="h-full min-w-0 flex-1 border-0 bg-transparent p-0 text-[15px] text-ink outline-none placeholder:text-[#9A8E78] focus:ring-0"
               />
             </div>
           </div>
@@ -142,7 +141,7 @@ export function CreateLinkForm({ onCreated }: CreateLinkFormProps) {
                       className={cn(
                         "flex-1 rounded-[7px] text-[13px] font-semibold transition-all",
                         expiry === p.id
-                          ? "bg-white text-(--app-foreground) shadow-[0_1px_2px_rgb(0_0_0/0.06)]"
+                          ? "bg-white text-ink shadow-[0_1px_2px_rgb(0_0_0/0.06)]"
                           : "bg-transparent text-[#7A6F5C]",
                       )}
                     >
@@ -166,14 +165,14 @@ export function CreateLinkForm({ onCreated }: CreateLinkFormProps) {
                   placeholder="my-link"
                   maxLength={50}
                   className={cn(
-                    "h-13 rounded-[10px] border-[1.5px] bg-(--app-background) px-3.5 text-[15px] text-(--app-foreground) placeholder:text-[#9A8E78]",
+                    "h-13 rounded-[10px] border-[1.5px] bg-surface px-3.5 text-[15px] text-ink placeholder:text-[#9A8E78]",
                     customCode && !validCustomCode
                       ? "border-[#E5A7A7]"
-                      : "border-(--line-soft)",
+                      : "border-line-soft",
                   )}
                 />
                 {customCode && !validCustomCode && (
-                  <p className="mt-1 text-xs text-(--red-dark)">
+                  <p className="mt-1 text-xs text-brand-dark">
                     Min 3 chars, letters, numbers, and hyphens only
                   </p>
                 )}
@@ -184,7 +183,7 @@ export function CreateLinkForm({ onCreated }: CreateLinkFormProps) {
           <Button
             type="submit"
             disabled={!canSubmit}
-            className="h-13 w-full rounded-[10px] bg-(--red-primary) text-[15px] font-semibold tracking-[-0.005em] text-white hover:bg-(--red-dark) disabled:bg-(--line-soft) disabled:text-white"
+            className="h-13 w-full rounded-[10px] bg-brand text-[15px] font-semibold tracking-[-0.005em] text-white hover:bg-brand-dark disabled:bg-line-soft disabled:text-white"
           >
             {saving ? (
               <>
@@ -217,8 +216,6 @@ export function CreateLinkForm({ onCreated }: CreateLinkFormProps) {
           </Button>
         </form>
       </Card>
-
-      {error && <p className="text-[13px] text-(--red-dark)">{error}</p>}
     </div>
   );
 }

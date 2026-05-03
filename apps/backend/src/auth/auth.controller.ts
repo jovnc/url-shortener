@@ -57,17 +57,19 @@ export class AuthController {
 
   @Get('callback')
   async callback(@Req() req: Request, @Res() res: Response) {
-    const cookies = req.cookies as Record<string, string>;
-    const expectedState = cookies['oidc_state'];
-    const expectedNonce = cookies['oidc_nonce'];
-    const codeVerifier = cookies['oidc_verifier'];
+    const cookies = req.cookies;
+    const expectedState = String(cookies['oidc_state'] ?? '');
+    const expectedNonce = String(cookies['oidc_nonce'] ?? '');
+    const codeVerifier = String(cookies['oidc_verifier'] ?? '');
 
     let dpopKeys: {
       privateJwk: object;
       publicJwk: object;
     };
     try {
-      dpopKeys = JSON.parse(cookies['oidc_dpop']);
+      dpopKeys = JSON.parse(
+        String(cookies['oidc_dpop'] ?? ''),
+      ) as typeof dpopKeys;
     } catch {
       throw new BadRequestException('Invalid OIDC session');
     }
@@ -93,7 +95,11 @@ export class AuthController {
       sessionToken,
       this.authCookieOptions(SESSION_COOKIE_MAX_AGE),
     );
-    res.redirect(this.configService.getOrThrow<AppConfig>('app').frontendUrl);
+    const dashboardUrl = new URL(
+      '/dashboard',
+      this.configService.getOrThrow<AppConfig>('app').frontendUrl,
+    );
+    res.redirect(dashboardUrl.toString());
   }
 
   @Post('logout')
