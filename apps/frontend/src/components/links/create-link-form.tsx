@@ -1,26 +1,31 @@
-'use client';
+"use client";
 
-import { FormEvent, useState } from 'react';
-import { Link2, ArrowRight } from 'lucide-react';
-import { toast } from 'sonner';
-import { readError } from '@/lib/api';
-import type { Link } from '@/lib/types';
+import { FormEvent, useState } from "react";
+import { ArrowRight, Link2 } from "lucide-react";
+import { toast } from "sonner";
+import { readError } from "@/lib/api";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
+import type { Link } from "@/lib/types";
 
 const EXPIRY_PRESETS = [
-  { id: 'never', label: 'Never' },
-  { id: '24h',   label: '24 hours' },
-  { id: '7d',    label: '7 days' },
-  { id: '30d',   label: '30 days' },
+  { id: "never", label: "Never" },
+  { id: "24h", label: "24 hours" },
+  { id: "7d", label: "7 days" },
+  { id: "30d", label: "30 days" },
 ] as const;
 
-type ExpiryPreset = typeof EXPIRY_PRESETS[number]['id'];
+type ExpiryPreset = (typeof EXPIRY_PRESETS)[number]["id"];
 
 function expiryToDate(preset: ExpiryPreset): string | undefined {
-  if (preset === 'never') return undefined;
+  if (preset === "never") return undefined;
   const now = new Date();
-  if (preset === '24h') now.setHours(now.getHours() + 24);
-  else if (preset === '7d') now.setDate(now.getDate() + 7);
-  else if (preset === '30d') now.setDate(now.getDate() + 30);
+  if (preset === "24h") now.setHours(now.getHours() + 24);
+  else if (preset === "7d") now.setDate(now.getDate() + 7);
+  else if (preset === "30d") now.setDate(now.getDate() + 30);
   return now.toISOString();
 }
 
@@ -29,29 +34,31 @@ interface CreateLinkFormProps {
 }
 
 export function CreateLinkForm({ onCreated }: CreateLinkFormProps) {
-  const [url, setUrl] = useState('');
-  const [expiry, setExpiry] = useState<ExpiryPreset>('never');
-  const [customCode, setCustomCode] = useState('');
+  const [url, setUrl] = useState("");
+  const [expiry, setExpiry] = useState<ExpiryPreset>("never");
+  const [customCode, setCustomCode] = useState("");
   const [advanced, setAdvanced] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   const validUrl = /^https?:\/\/.+/.test(url);
-  const validCustomCode = customCode === '' || (/^[0-9a-zA-Z-]+$/.test(customCode) && customCode.length >= 3);
+  const validCustomCode =
+    customCode === "" ||
+    (/^[0-9a-zA-Z-]+$/.test(customCode) && customCode.length >= 3);
   const canSubmit = validUrl && validCustomCode && !saving;
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!canSubmit) return;
     setSaving(true);
-    setError('');
+    setError("");
 
     try {
       const expiresAt = expiryToDate(expiry);
-      const response = await fetch('/api/links', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/links", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           originalUrl: url,
           ...(expiresAt ? { expiresAt } : {}),
@@ -63,185 +70,155 @@ export function CreateLinkForm({ onCreated }: CreateLinkFormProps) {
 
       const link = (await response.json()) as Link;
       onCreated(link);
-      setUrl('');
-      setExpiry('never');
-      setCustomCode('');
+      setUrl("");
+      setExpiry("never");
+      setCustomCode("");
       setAdvanced(false);
-      toast.success('Short link created!');
+      toast.success("Short link created!");
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to create link');
+      setError(err instanceof Error ? err.message : "Unable to create link");
     } finally {
       setSaving(false);
     }
   }
 
   return (
-    <div style={{ display: 'grid', gap: 8 }}>
-      <form
-        onSubmit={handleSubmit}
-        style={{
-          background: '#fff', border: '1px solid #EDE9E3', borderRadius: 16,
-          padding: 28, boxShadow: '0 1px 0 rgba(0,0,0,0.02), 0 12px 32px rgba(31,27,20,0.04)',
-        }}
-      >
-        {/* Header */}
-        <div style={{
-          display: 'flex', alignItems: 'baseline', justifyContent: 'space-between',
-          marginBottom: 20,
-        }}>
-          <div>
-            <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, letterSpacing: '-0.015em', color: '#1A1714' }}>
-              New short link
-            </h2>
-            <p style={{ margin: '4px 0 0', fontSize: 13, color: '#7A6F5C' }}>
-              Paste a long URL. Customise the alias if you want.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => setAdvanced(!advanced)}
-            style={{
-              background: 'transparent', border: 'none', color: '#F4333D',
-              fontSize: 13, fontWeight: 600, cursor: 'pointer', padding: '4px 0',
-              flexShrink: 0,
-            }}
-          >
-            {advanced ? 'Hide options' : 'Advanced options'}
-          </button>
-        </div>
-
-        {/* URL input */}
-        <div style={{ marginBottom: advanced ? 14 : 20 }}>
-          <div style={{
-            fontSize: 11, fontWeight: 700, letterSpacing: '0.08em',
-            textTransform: 'uppercase', color: '#9A8E78', marginBottom: 7,
-          }}>
-            Destination URL
-          </div>
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 10,
-            padding: '0 14px', height: 52, borderRadius: 10,
-            border: `1.5px solid ${url && !validUrl ? '#E5A7A7' : '#E5DFD6'}`,
-            background: '#FDFCF9',
-            transition: 'border-color 160ms',
-          }}>
-            <Link2 size={18} color="#9A8E78" style={{ flexShrink: 0 }} />
-            <input
-              type="url"
-              value={url}
-              onChange={e => setUrl(e.target.value)}
-              placeholder="https://example.com/very-long-url"
-              required
-              style={{
-                flex: 1, border: 'none', outline: 'none', background: 'transparent',
-                fontSize: 15, color: '#1A1714', fontFamily: 'inherit',
-              }}
-            />
-          </div>
-        </div>
-
-        {/* Advanced options */}
-        {advanced && (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 20 }}>
-            {/* Expiry presets */}
+    <div className="grid gap-2">
+      <Card className="rounded-2xl border-(--line) bg-white p-7 shadow-[0_1px_0_rgb(0_0_0/0.02),0_12px_32px_rgb(31_27_20/0.04)]">
+        <form onSubmit={handleSubmit}>
+          <div className="mb-5 flex items-baseline justify-between gap-4 max-sm:flex-col max-sm:items-start">
             <div>
-              <div style={{
-                fontSize: 11, fontWeight: 700, letterSpacing: '0.08em',
-                textTransform: 'uppercase', color: '#9A8E78', marginBottom: 7,
-              }}>
-                Expires after
-              </div>
-              <div style={{
-                display: 'flex', gap: 6, height: 52, padding: 6,
-                background: '#F5F1E8', borderRadius: 10,
-              }}>
-                {EXPIRY_PRESETS.map(p => (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => setExpiry(p.id)}
-                    style={{
-                      flex: 1, border: 'none', borderRadius: 7, fontSize: 13, fontWeight: 600,
-                      background: expiry === p.id ? '#fff' : 'transparent',
-                      color: expiry === p.id ? '#1A1714' : '#7A6F5C',
-                      boxShadow: expiry === p.id ? '0 1px 2px rgba(0,0,0,0.06)' : 'none',
-                      cursor: 'pointer', transition: 'all 120ms',
-                    }}
-                  >
-                    {p.label}
-                  </button>
-                ))}
-              </div>
+              <h2 className="text-xl font-bold tracking-[-0.015em] text-(--app-foreground)">
+                New short link
+              </h2>
+              <p className="mt-1 text-[13px] text-[#7A6F5C]">
+                Paste a long URL. Customise the alias if you want.
+              </p>
             </div>
+            <Button
+              variant="ghost"
+              type="button"
+              onClick={() => setAdvanced(!advanced)}
+              className="h-auto shrink-0 p-0 text-[13px] font-semibold text-(--red-primary) hover:bg-transparent hover:text-(--red-dark)"
+            >
+              {advanced ? "Hide options" : "Advanced options"}
+            </Button>
+          </div>
 
-            {/* Custom short code */}
-            <div>
-              <div style={{
-                fontSize: 11, fontWeight: 700, letterSpacing: '0.08em',
-                textTransform: 'uppercase', color: '#9A8E78', marginBottom: 7,
-              }}>
-                Custom alias <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(optional)</span>
+          <div className={cn(advanced ? "mb-3.5" : "mb-5")}>
+            <Label className="mb-2 text-[11px] font-bold tracking-[0.08em] text-[#9A8E78] uppercase">
+              Destination URL
+            </Label>
+            <div
+              className={cn(
+                "flex h-13 items-center gap-2.5 rounded-[10px] border-[1.5px] bg-(--app-background) px-3.5 transition-colors",
+                url && !validUrl ? "border-[#E5A7A7]" : "border-(--line-soft)",
+              )}
+            >
+              <Link2 className="size-4.5 shrink-0 text-[#9A8E78]" />
+              <input
+                type="url"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                placeholder="https://example.com/very-long-url"
+                required
+                className="h-full min-w-0 flex-1 border-0 bg-transparent p-0 text-[15px] text-(--app-foreground) outline-none placeholder:text-[#9A8E78] focus:ring-0"
+              />
+            </div>
+          </div>
+
+          {advanced && (
+            <div className="mb-5 grid grid-cols-2 gap-3.5 max-sm:grid-cols-1">
+              <div>
+                <Label className="mb-2 text-[11px] font-bold tracking-[0.08em] text-[#9A8E78] uppercase">
+                  Expires after
+                </Label>
+                <div className="flex h-13 gap-1.5 rounded-[10px] bg-[#F5F1E8] p-1.5">
+                  {EXPIRY_PRESETS.map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => setExpiry(p.id)}
+                      className={cn(
+                        "flex-1 rounded-[7px] text-[13px] font-semibold transition-all",
+                        expiry === p.id
+                          ? "bg-white text-(--app-foreground) shadow-[0_1px_2px_rgb(0_0_0/0.06)]"
+                          : "bg-transparent text-[#7A6F5C]",
+                      )}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
               </div>
-              <div style={{
-                display: 'flex', alignItems: 'center', height: 52, padding: '0 14px',
-                borderRadius: 10, background: '#FDFCF9',
-                border: `1.5px solid ${customCode && !validCustomCode ? '#E5A7A7' : '#E5DFD6'}`,
-                transition: 'border-color 160ms',
-              }}>
-                <input
+
+              <div>
+                <Label className="mb-2 text-[11px] font-bold tracking-[0.08em] text-[#9A8E78] uppercase">
+                  Custom alias{" "}
+                  <span className="font-normal tracking-normal normal-case">
+                    (optional)
+                  </span>
+                </Label>
+                <Input
                   type="text"
                   value={customCode}
-                  onChange={e => setCustomCode(e.target.value)}
+                  onChange={(e) => setCustomCode(e.target.value)}
                   placeholder="my-link"
                   maxLength={50}
-                  style={{
-                    flex: 1, border: 'none', outline: 'none', background: 'transparent',
-                    fontSize: 15, color: '#1A1714', fontFamily: 'inherit',
-                  }}
+                  className={cn(
+                    "h-13 rounded-[10px] border-[1.5px] bg-(--app-background) px-3.5 text-[15px] text-(--app-foreground) placeholder:text-[#9A8E78]",
+                    customCode && !validCustomCode
+                      ? "border-[#E5A7A7]"
+                      : "border-(--line-soft)",
+                  )}
                 />
+                {customCode && !validCustomCode && (
+                  <p className="mt-1 text-xs text-(--red-dark)">
+                    Min 3 chars, letters, numbers, and hyphens only
+                  </p>
+                )}
               </div>
-              {customCode && !validCustomCode && (
-                <p style={{ margin: '4px 0 0', fontSize: 12, color: '#C1242C' }}>
-                  Min 3 chars, letters, numbers, and hyphens only
-                </p>
-              )}
             </div>
-          </div>
-        )}
-
-        {/* Submit */}
-        <button
-          type="submit"
-          disabled={!canSubmit}
-          style={{
-            width: '100%', height: 52, borderRadius: 10, border: 'none',
-            background: canSubmit ? '#F4333D' : '#E5DFD6',
-            color: '#fff', fontSize: 15, fontWeight: 600, letterSpacing: '-0.005em',
-            cursor: canSubmit ? 'pointer' : 'not-allowed',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-            transition: 'background 160ms',
-          }}
-        >
-          {saving ? (
-            <>
-              <svg width="16" height="16" viewBox="0 0 24 24" style={{ animation: 'trace-spin 0.8s linear infinite' }}>
-                <circle cx="12" cy="12" r="9" fill="none" stroke="#fff" strokeWidth="2.5" strokeOpacity="0.3" />
-                <path d="M21 12a9 9 0 0 0-9-9" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" />
-              </svg>
-              Minting your link…
-            </>
-          ) : (
-            <>
-              Shorten link
-              <ArrowRight size={16} color="#fff" />
-            </>
           )}
-        </button>
-      </form>
 
-      {error && (
-        <p style={{ margin: 0, color: '#C1242C', fontSize: 13 }}>{error}</p>
-      )}
+          <Button
+            type="submit"
+            disabled={!canSubmit}
+            className="h-13 w-full rounded-[10px] bg-(--red-primary) text-[15px] font-semibold tracking-[-0.005em] text-white hover:bg-(--red-dark) disabled:bg-(--line-soft) disabled:text-white"
+          >
+            {saving ? (
+              <>
+                <svg className="size-4 animate-spin" viewBox="0 0 24 24">
+                  <circle
+                    cx="12"
+                    cy="12"
+                    r="9"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeOpacity="0.3"
+                  />
+                  <path
+                    d="M21 12a9 9 0 0 0-9-9"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                  />
+                </svg>
+                Minting your link...
+              </>
+            ) : (
+              <>
+                Shorten link
+                <ArrowRight className="size-4" />
+              </>
+            )}
+          </Button>
+        </form>
+      </Card>
+
+      {error && <p className="text-[13px] text-(--red-dark)">{error}</p>}
     </div>
   );
 }

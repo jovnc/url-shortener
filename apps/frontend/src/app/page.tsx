@@ -1,192 +1,125 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { ArrowRight, ShieldCheck, Link2 } from 'lucide-react';
-import { readError } from '@/lib/api';
-import { Topbar } from '@/components/topbar';
-import { TraceMark } from '@/components/trace-mark';
-import { SingpassLogo } from '@/components/singpass-logo';
-import { QRBlock } from '@/components/qr-block';
-import { CreateLinkForm } from '@/components/links/create-link-form';
-import { LinkList } from '@/components/links/link-list';
-import type { User, Link } from '@/lib/types';
+import { useEffect, useState } from "react";
+import { ArrowRight, ShieldCheck, Link2 } from "lucide-react";
+import { readError } from "@/lib/api";
+import { Topbar } from "@/components/topbar";
+import { SingpassLogo } from "@/components/singpass-logo";
+import { QRBlock } from "@/components/qr-block";
+import { CreateLinkForm } from "@/components/links/create-link-form";
+import { LinkList } from "@/components/links/link-list";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import type { User, Link } from "@/lib/types";
 
 // ─── Landing page ────────────────────────────────────────────────────────────
 
 function LandingVisual() {
   return (
-    <div style={{
-      position: 'relative', height: 460,
-      display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 14,
-    }}>
-      {/* Long URL */}
-      <div style={{
-        background: '#fff', border: '1px solid #EDE9E3', borderRadius: 12,
-        padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 10,
-        boxShadow: '0 1px 0 rgba(0,0,0,0.02)', transform: 'rotate(-1.2deg)',
-      }}>
-        <Link2 size={15} color="#9A8E78" style={{ flexShrink: 0 }} />
-        <span style={{
-          flex: 1, fontFamily: 'ui-monospace, SFMono-Regular, monospace',
-          fontSize: 12, color: '#7A6F5C',
-          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-        }}>
-          https://www.mof.gov.sg/singaporebudget/budget-2026/budget-statement-and-annexes
-        </span>
+    <div className="relative flex min-h-[460px] flex-col justify-center gap-3.5">
+      <Card className="rotate-[-1.2deg] border-(--line) bg-white py-0 shadow-[0_1px_0_rgb(0_0_0/0.02)]">
+        <CardContent className="flex items-center gap-2.5 p-3.5 px-4">
+          <Link2 className="size-[15px] shrink-0 text-[#9A8E78]" />
+          <span className="min-w-0 flex-1 truncate font-mono text-xs text-[#7A6F5C]">
+            https://www.mof.gov.sg/singaporebudget/budget-2026/budget-statement-and-annexes
+          </span>
+        </CardContent>
+      </Card>
+
+      <div className="flex items-center justify-center gap-3 py-1">
+        <div className="h-px flex-1 bg-linear-to-r from-transparent to-(--line-soft)" />
+        <Badge className="h-auto gap-1.5 bg-(--red-tint) px-2.5 py-1 text-[11px] font-bold tracking-[0.04em] text-(--red-deeper) uppercase">
+          <ShieldCheck className="size-[11px]" /> Verified creator
+        </Badge>
+        <div className="h-px flex-1 bg-linear-to-r from-(--line-soft) to-transparent" />
       </div>
 
-      {/* Arrow */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, padding: '4px 0' }}>
-        <div style={{ flex: 1, height: 1, background: 'linear-gradient(90deg, transparent, #E5DFD6)' }} />
-        <div style={{
-          display: 'inline-flex', alignItems: 'center', gap: 6,
-          padding: '4px 10px', borderRadius: 999,
-          background: '#FFE9EA', color: '#8E1820',
-          fontSize: 11, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase',
-        }}>
-          <ShieldCheck size={11} color="#8E1820" /> Minting · Joanne Lim
-        </div>
-        <div style={{ flex: 1, height: 1, background: 'linear-gradient(90deg, #E5DFD6, transparent)' }} />
-      </div>
+      <Card className="rotate-[0.6deg] border-[1.5px] border-[rgb(244_51_61/0.2)] bg-white py-0 shadow-[0_18px_60px_rgb(244_51_61/0.13),0_1px_0_rgb(0_0_0/0.03)]">
+        <CardContent className="grid grid-cols-[1fr_auto] items-center gap-4.5 p-5 max-sm:grid-cols-1">
+          <div className="min-w-0">
+            <div className="mb-1 text-[11px] font-bold tracking-[0.06em] text-[#9A8E78] uppercase">
+              Your verified short link
+            </div>
+            <div className="truncate font-mono text-[22px] font-bold tracking-[-0.015em]">
+              <span className="font-medium text-[#9A8E78]">trace.gov.sg/</span>
+              <span className="text-(--red-primary)">budget-2026</span>
+            </div>
+            <div className="mt-3 flex flex-wrap items-center gap-2.5 text-xs text-[#7A6F5C]">
+              <span className="inline-flex items-center gap-1 font-semibold text-(--red-dark)">
+                <ShieldCheck className="size-[11px]" /> Created with Singpass
+              </span>
+              <span>·</span>
+              <span>Lifetime</span>
+              <span>·</span>
+              <span>12,847 clicks</span>
+            </div>
+          </div>
+          <div className="w-fit rounded-lg border border-(--line) bg-white p-1.5">
+            <QRBlock value="https://trace.gov.sg/budget-2026" size={86} />
+          </div>
+        </CardContent>
+      </Card>
 
-      {/* Short URL card */}
-      <div style={{
-        background: '#fff', border: '1.5px solid rgba(244,51,61,0.2)', borderRadius: 14,
-        padding: 20, display: 'grid', gridTemplateColumns: '1fr auto', gap: 18,
-        alignItems: 'center',
-        boxShadow: '0 18px 60px rgba(244,51,61,0.13), 0 1px 0 rgba(0,0,0,0.03)',
-        transform: 'rotate(0.6deg)',
-      }}>
-        <div>
-          <div style={{
-            fontSize: 11, fontWeight: 700, letterSpacing: '0.06em',
-            color: '#9A8E78', textTransform: 'uppercase', marginBottom: 4,
-          }}>
-            Your verified short link
+      <Card className="mt-2 border-dashed border-(--line-soft) bg-(--app-background) py-0 shadow-none">
+        <CardContent className="flex items-start gap-3 p-4">
+          <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-(--red-primary)">
+            <ShieldCheck className="size-4 text-white" />
           </div>
-          <div style={{
-            fontSize: 22, fontWeight: 700, letterSpacing: '-0.015em',
-            fontFamily: 'ui-monospace, SFMono-Regular, monospace',
-          }}>
-            <span style={{ color: '#9A8E78', fontWeight: 500 }}>trace.gov.sg/</span>
-            <span style={{ color: '#F4333D' }}>budget-2026</span>
+          <div className="text-[13px] leading-5 text-(--app-muted)">
+            <strong className="text-(--app-foreground)">
+              No anonymous creators.
+            </strong>{" "}
+            Every Trace link starts from a Singpass-verified account, making
+            scam links easier to trace and stop.
           </div>
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 10, marginTop: 12,
-            fontSize: 12, color: '#7A6F5C',
-          }}>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: '#C1242C', fontWeight: 600 }}>
-              <ShieldCheck size={11} color="#C1242C" /> Verified by Singpass
-            </span>
-            <span>·</span>
-            <span>Lifetime</span>
-            <span>·</span>
-            <span>12,847 clicks</span>
-          </div>
-        </div>
-        <div style={{ padding: 6, background: '#fff', border: '1px solid #EDE9E3', borderRadius: 8 }}>
-          <QRBlock value="https://trace.gov.sg/budget-2026" size={86} />
-        </div>
-      </div>
-
-      {/* Verified callout */}
-      <div style={{
-        marginTop: 8, padding: 16, borderRadius: 12,
-        background: '#FDFCF9', border: '1px dashed #E5DFD6',
-        display: 'flex', alignItems: 'flex-start', gap: 12,
-      }}>
-        <div style={{
-          width: 32, height: 32, borderRadius: 8, background: '#F4333D',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-        }}>
-          <ShieldCheck size={16} color="#fff" />
-        </div>
-        <div style={{ fontSize: 13, lineHeight: 1.5, color: '#5C544A' }}>
-          <strong style={{ color: '#1A1714' }}>No anonymous links.</strong>{' '}
-          Every Trace URL is bound to a Singpass identity.
-          Your name stays private — but if a link is misused, it can be traced and retired.
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
 
-function LandingPage({ onLogin }: { onLogin: () => void }) {
+function LandingPage() {
   return (
-    <div style={{ minHeight: '100vh', background: '#FDFCF9', display: 'flex', flexDirection: 'column' }}>
-      {/* Brand bar */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '24px 48px 0' }}>
-        <TraceMark size={26} color="#F4333D" />
-        <span style={{ fontSize: 18, fontWeight: 700, letterSpacing: '-0.01em', color: '#1A1714' }}>Trace</span>
-        <span style={{
-          marginLeft: 12, padding: '3px 8px', borderRadius: 4,
-          background: '#F5F1E8', fontSize: 11, fontWeight: 600, color: '#7A6F5C',
-          letterSpacing: '0.04em', textTransform: 'uppercase',
-        }}>Beta</span>
-      </div>
-
-      {/* Hero */}
-      <div style={{
-        flex: 1, padding: '64px 48px 80px',
-        display: 'grid', gridTemplateColumns: '1.15fr 1fr', gap: 60, alignItems: 'center',
-        maxWidth: 1200, width: '100%', margin: '0 auto', boxSizing: 'border-box',
-      }}>
+    <div className="flex min-h-screen flex-col bg-(--app-background)">
+      <div className="mx-auto grid w-full max-w-[1200px] flex-1 grid-cols-[1.15fr_1fr] items-center gap-[60px] px-6 py-16 sm:px-12 lg:pb-20 max-lg:grid-cols-1">
         <div>
-          {/* Eyebrow */}
-          <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: 8,
-            padding: '6px 12px 6px 8px', borderRadius: 999,
-            background: '#FFE9EA', color: '#8E1820',
-            fontSize: 12, fontWeight: 600, marginBottom: 24,
-          }}>
-            <span style={{
-              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-              width: 18, height: 18, borderRadius: '50%', background: '#F4333D', color: '#fff',
-            }}>
-              <ShieldCheck size={11} color="#fff" />
+          <Badge className="mb-6 h-auto gap-2 rounded-full bg-(--red-tint) py-1.5 pr-3 pl-2 text-xs font-semibold text-(--red-deeper)">
+            <span className="flex size-4.5 items-center justify-center rounded-full bg-(--red-primary) text-white">
+              <ShieldCheck className="size-[11px]" />
             </span>
-            A Singpass-verified URL shortener
-          </div>
+            Singpass-verified link creation
+          </Badge>
 
-          {/* Headline */}
-          <h1 style={{
-            margin: 0, fontSize: 'clamp(52px, 6vw, 76px)', fontWeight: 800, lineHeight: 0.98,
-            letterSpacing: '-0.04em', color: '#1A1714',
-          }}>
-            Every link,<br />
-            <span style={{ color: '#F4333D', fontStyle: 'italic', fontWeight: 700 }}>traceable.</span>
+          <h1 className="m-0 text-[clamp(52px,6vw,76px)] leading-[0.98] font-extrabold tracking-[-0.04em] text-(--app-foreground)">
+            Short links
+            <br />
+            <span className="font-bold text-(--red-primary) italic">
+              with a real creator.
+            </span>
           </h1>
 
-          <p style={{
-            margin: '24px 0 32px', fontSize: 17, lineHeight: 1.55, color: '#5C544A', maxWidth: 480,
-          }}>
-            Trace turns long links into short ones — and ties every shortened URL to a verified Singapore identity.
-            No anonymous spam, no phishing chains.
+          <p className="mt-6 mb-8 max-w-[480px] text-[17px] leading-[1.55] text-(--app-muted)">
+            Anyone can open a Trace link. Only Singpass-verified users can
+            create one, so every short URL starts with accountability.
           </p>
 
-          {/* CTA */}
           <form action="/api/auth/login" method="get">
-            <button type="submit" style={{
-              height: 56, padding: '0 22px 0 8px', borderRadius: 12, border: 'none',
-              background: '#F4333D', color: '#fff',
-              fontSize: 15, fontWeight: 600, cursor: 'pointer',
-              display: 'inline-flex', alignItems: 'center', gap: 12,
-              boxShadow: '0 1px 0 #C1242C, 0 12px 30px rgba(244,51,61,0.2)',
-            }}>
-              <span style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                width: 40, height: 40, borderRadius: 8, background: '#fff', flexShrink: 0,
-              }}>
+            <Button
+              type="submit"
+              className="h-14 gap-3 rounded-xl bg-(--red-primary) py-0 pr-5 pl-2 text-[15px] font-semibold text-white shadow-[0_1px_0_var(--red-dark),0_12px_30px_rgb(244_51_61/0.2)] hover:bg-(--red-dark)"
+            >
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-white">
                 <SingpassLogo size={26} />
               </span>
               Sign in with Singpass
-              <ArrowRight size={16} color="#fff" />
-            </button>
+              <ArrowRight className="size-4 text-white" />
+            </Button>
           </form>
         </div>
 
-        {/* Right visual */}
-        <div style={{ position: 'relative' }}>
+        <div className="relative">
           <LandingVisual />
         </div>
       </div>
@@ -198,13 +131,10 @@ function LandingPage({ onLogin }: { onLogin: () => void }) {
 
 function LoadingShell() {
   return (
-    <div style={{ minHeight: '100vh', background: '#FDFCF9' }}>
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: 10,
-        padding: '20px 40px', borderBottom: '1px solid #EDE9E3',
-      }}>
-        <div style={{ width: 26, height: 26, borderRadius: 4, background: '#EDE9E3' }} />
-        <div style={{ width: 60, height: 18, borderRadius: 4, background: '#EDE9E3' }} />
+    <div className="min-h-screen bg-(--app-background)">
+      <div className="flex items-center gap-2.5 border-b border-(--line) px-10 py-5">
+        <Skeleton className="size-6.5 rounded bg-(--line)" />
+        <Skeleton className="h-4.5 w-15 rounded bg-(--line)" />
       </div>
     </div>
   );
@@ -217,22 +147,25 @@ export default function Home() {
   const [links, setLinks] = useState<Link[]>([]);
   const [newLinkId, setNewLinkId] = useState<string | undefined>();
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   useEffect(() => {
     async function load() {
       try {
-        const meRes = await fetch('/api/auth/me', { credentials: 'include' });
-        if (!meRes.ok) { setUser(null); return; }
+        const meRes = await fetch("/api/auth/me", { credentials: "include" });
+        if (!meRes.ok) {
+          setUser(null);
+          return;
+        }
 
         const currentUser = (await meRes.json()) as User;
         setUser(currentUser);
 
-        const linksRes = await fetch('/api/links', { credentials: 'include' });
+        const linksRes = await fetch("/api/links", { credentials: "include" });
         if (!linksRes.ok) throw new Error(await readError(linksRes));
         setLinks((await linksRes.json()) as Link[]);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Unable to load app');
+        setError(err instanceof Error ? err.message : "Unable to load app");
       } finally {
         setLoading(false);
       }
@@ -241,32 +174,34 @@ export default function Home() {
   }, []);
 
   async function logout() {
-    await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+    await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
     setUser(null);
     setLinks([]);
   }
 
   if (loading) return <LoadingShell />;
 
-  if (!user) return <LandingPage onLogin={() => {}} />;
+  if (!user) return <LandingPage />;
 
   return (
-    <div style={{ minHeight: '100vh', background: '#FDFCF9' }}>
-      <div className="shell">
+    <div className="min-h-screen bg-(--app-background)">
+      <div className="mx-auto w-[min(920px,calc(100%-32px))] py-10 pb-20 max-[760px]:py-8">
         <Topbar user={user} onLogout={() => void logout()} />
-        {error && (
-          <p style={{ margin: '0 0 16px', color: '#C1242C', fontSize: 13 }}>{error}</p>
-        )}
+        {error && <p className="mb-4 text-[13px] text-(--red-dark)">{error}</p>}
         <CreateLinkForm
-          onCreated={link => {
-            setLinks(current => [link, ...current]);
+          onCreated={(link) => {
+            setLinks((current) => [link, ...current]);
             setNewLinkId(link.id);
           }}
         />
         <LinkList
           links={links}
           newLinkId={newLinkId}
-          onDisable={id => setLinks(current => current.map(l => l.id === id ? { ...l, isActive: false } : l))}
+          onDisable={(id) =>
+            setLinks((current) =>
+              current.map((l) => (l.id === id ? { ...l, isActive: false } : l)),
+            )
+          }
         />
       </div>
     </div>
