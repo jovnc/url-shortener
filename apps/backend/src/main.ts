@@ -12,19 +12,22 @@ async function bootstrap() {
   const configService = app.get(ConfigService);
   const { port, frontendUrl } = configService.getOrThrow<AppConfig>('app');
 
-  // Bootstrap configuration
   app.setGlobalPrefix('api/v1', {
     exclude: ['.well-known/*path'],
   });
 
-  // Swagger setup
-  const config = new DocumentBuilder()
-    .setTitle('URL Shortener API')
-    .setDescription('API documentation for URL shortening and authentication')
-    .setVersion('1.0')
-    .build();
-  const documentFactory = () => SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, documentFactory);
+  // NestJS Swagger setup, only in non-production environments
+  // Available at http://localhost:3001/api in development
+  if (process.env.NODE_ENV !== 'production') {
+    const config = new DocumentBuilder()
+      .setTitle('URL Shortener API')
+      .setDescription('API documentation for URL shortening and authentication')
+      .setVersion('1.0')
+      .build();
+    SwaggerModule.setup('api', app, () =>
+      SwaggerModule.createDocument(app, config),
+    );
+  }
 
   app.enableCors({
     origin: frontendUrl,
