@@ -1,111 +1,135 @@
-# URL Shortener — Product Requirements Document
+# URL Shortener Product Requirements
 
 ## Overview
 
-Build a URL shortening service (like [bit.ly](https://bit.ly/)). Singpass serves as the trust anchor for link creation, ensuring all shortened URLs are traceable to a verified Singapore identity.
+Build a URL shortening service where link creation is tied to a Singpass-verified identity. Anyone can open a short link, but only authenticated users can create and manage links.
 
 ## Target Audience
 
-- General public
-- Singapore residents with a Singpass account who need to create and manage links
+- Singapore residents with Singpass access who need trusted short links.
+- Public users who receive and open short links without signing in.
 
----
+## Current Product Scope
 
-## Functional Requirements
+### Authentication
 
-### P0 — Skeleton (end-to-end baseline)
+- MockPass/Singpass OIDC login flow with PAR, PKCE, nonce/state validation, DPoP, and private-key JWT client authentication.
+- Backend-issued JWT session stored in an HTTP-only cookie.
+- `/api/v1/auth/login`, `/api/v1/auth/callback`, `/api/v1/auth/logout`, and `/api/v1/auth/me` endpoints.
+- Users are upserted from OIDC claims and stored with Singpass `sub` plus optional display name.
+- Public JWKS endpoint for MockPass client verification.
 
-Nothing else can be built without these.
+### Link Creation And Management
 
-- Project scaffolding: monorepo + docker-compose (NestJS, NextJS, Postgres, Redis)
-- Database schema + migrations
-- MockPass OIDC auth flow (`/auth/login`, `/auth/callback`, `/auth/logout`, `/auth/me`)
-- `POST /api/v1/link` — create a link (basic, no custom alias yet)
-- `GET /api/v1/link/:code` — public redirect (Postgres only, no cache yet); HTTP 302
-- Minimal frontend: login page → create link form → show shortened URL
+- Authenticated users can create short links from the dashboard.
+- Link creation supports optional expiry presets and optional custom aliases.
+- Custom aliases are 3-50 characters and restricted to letters, numbers, and hyphens at the API layer.
+- Reserved aliases such as `api`, `auth`, `health`, `links`, `login`, `logout`, and `me` are blocked.
+- Authenticated users can view their own links ordered by newest first.
+- Authenticated users can disable their own links; disabled links stop redirecting and are hidden from sharing actions in the UI.
+- Dashboard shows active, expired, and disabled states.
+- Active links can be copied and displayed as QR codes.
 
-### P1 — Feature complete (demo critical)
+### Redirects
 
-The demo feels broken without these.
+- Public short links are handled by the frontend dynamic route and proxied to the backend redirect endpoint.
+- Backend redirects with HTTP `302` when the link is active and unexpired.
+- Expired or disabled links return `410 Gone`.
+- Unknown or malformed short codes return `404 Not Found`.
+- Redirect responses set `Cache-Control: no-store`.
 
-- `GET /api/v1/links` — list current user's links (dashboard)
-- `DELETE /api/v1/link/:code` — with alias permanent retirement
-- URL validation: HTTPS only, block private IPs (`127.x`, `10.x`, `172.16–31.x`, `192.168.x`), max 2048 chars
-- Custom alias support: 3–50 chars, alphanumeric and hyphens only; reserved words list (`api`, `login`, `logout`, `health`, etc.)
-- Short code collision handling: retry with new salt on unique constraint violation
-- Redis cache on the redirect path (required for < 50ms p99 target); invalidated on deactivation or deletion
-- CORS config on NestJS
-- Proper error responses: `409` alias conflict, `410` expired, `400` invalid URL
+### Validation And Errors
 
-### P2 — Demo-ready polish
+- `originalUrl` must be an absolute `http` or `https` URL without leading or trailing whitespace.
+- `originalUrl` is capped at 2048 characters.
+- Expiry dates must be valid ISO-8601 timestamps in the future.
+- Duplicate custom aliases return `409 Conflict`.
+- Invalid request bodies return validation errors from NestJS.
 
-Makes the demo feel complete and actually deployable.
+### Platform And Operations
 
-- `PATCH /api/v1/link/:code` — update `expires_at`, `is_active`, `original_url`
-- Lazy expiry enforcement at redirect time; expired links return `410 Gone` with `{"error": "link_expired"}`
-- Frontend dashboard: list links, delete, show active/expired status
-- Rate limiting on create and redirect endpoints
-- Railway deployment config (Dockerfiles for both services)
-- Register MockPass callback URL for production Railway URL
+- Monorepo with Next.js frontend and NestJS backend.
+- PostgreSQL stores users and links through Prisma migrations.
+- Redis is used for redirect cache entries and the short-code counter.
+- Short codes are generated from a Redis-backed Base62 counter with a minimum length of 6.
+- Health check endpoint verifies PostgreSQL and Redis status.
+- CORS is restricted to the configured frontend URL.
+- Swagger/OpenAPI is available in non-production environments at `/api`.
+- Docker Compose supports local PostgreSQL, Redis, and MockPass.
+- Railway deployment is documented for frontend, backend, MockPass, PostgreSQL, and Redis services.
 
-### P3 — Post-demo
+## Current Architecture
 
-Don't touch these until after the demo.
+### Frontend
 
-- OpenAPI/Swagger spec covering all `/api/v1/` endpoints
-- CSRF tokens + CSP headers
-- Full test coverage (unit + integration)
-- README with local setup instructions (MockPass config, env vars, edge cases)
-- Click analytics (explicitly out of scope until post-demo)
-
----
-
-## Non-Functional Requirements
-
-- **Availability** — Redirection must be highly available; downtime breaks all active links.
-- **Latency** — Redirects must resolve in < 50ms p99.
-- **Concurrency** — System handles concurrent writes without race conditions on hash generation.
-- **Collision Resistance** — Short code generation (Base62) must handle collisions gracefully at scale.
-- **Read-Heavy Design** — Architecture optimised for high read-to-write ratio (redirects >> creations).
-- **Compliance** — Singpass integration must follow NDI guidelines and Singapore's PDPA. The application stores the user's `sub` (opaque identifier) and display name from the OIDC token; no other personal data is retained.
-
----
-
-## Proposed Architecture & Tech Stack
-
-### Auth Layer
-
-Singpass OIDC integration for user login. Sessions are stateless — the Singpass-issued JWT is validated on every write request; no server-side session store is used. Read (redirect) endpoints are fully public. MockPass is used as the OIDC provider in development and demo environments.
+- Next.js application serving the landing page, dashboard, API proxy routes, and public short-link route.
+- Frontend API routes proxy authenticated requests to the private backend service so browsers only need the frontend origin.
 
 ### Backend
 
-NestJS (Node.js). REST API versioned under `/api/v1/`.
+- NestJS REST API under `/api/v1`.
+- JWT guard protects authenticated auth and link-management endpoints.
+- Redirect endpoint remains public.
 
 ### Data Store
 
-PostgreSQL as the source of truth, with a unique index on `short_code` for O(1) lookups and standard indexes on `user_id` and `expires_at` to support ownership queries and expiry scans.
+- PostgreSQL is the source of truth.
+- `users.sub` and `links.short_code` are unique.
+- Links are indexed by owner and expiry.
 
-### Cache
+### Cache And Counters
 
-Redis cache in front of PostgreSQL for short-code lookups; required to meet the < 50ms p99 redirect latency target. Cache is populated on first redirect and invalidated on link deactivation or deletion.
+- Redis caches redirect payloads for up to 15 minutes, capped by link expiry.
+- Redis `INCR` produces monotonically increasing short-code IDs encoded as Base62.
+- Link disablement invalidates the redirect cache.
 
-### ID Generation
+## Known Gaps
 
-Short codes are generated by Base62-encoding the first 7 characters of SHA-256(URL + random salt). Insertion uses a unique constraint on `short_code`; on a collision the server returns a user-friendly error ("Could not generate a unique link, please try again") and the client retries with a new salt. Collisions are expected to be astronomically rare at this scale.
+- Public frontend redirect validation currently accepts alphanumeric short codes only, while the backend permits hyphens in custom aliases. This should be aligned before promoting hyphenated aliases heavily.
+- URL validation does not yet block private IP ranges, localhost, or internal hostnames.
+- There is no rate limiting on create, auth, or redirect endpoints.
+- There is no edit flow for changing destination URL, expiry, or active status after creation.
+- Disabled aliases are not permanently retired as a separate domain concept; they remain existing inactive link records.
+- Test coverage is limited; comprehensive unit and integration tests are still needed.
 
----
+## Future Improvements
 
-## Out of Scope
+### High Priority
 
-- Advanced analytics (geolocation, device type, referrers).
-- Click counters and basic link analytics (deferred to P3).
-- Non-Singpass authentication methods (social login, email/password).
-- Malicious link scanning or phishing detection.
+- Align frontend and backend short-code validation, including hyphenated aliases.
+- Add SSRF-safe URL validation: block localhost, private IP ranges, link-local addresses, and internal hostnames.
+- Add rate limiting for login, link creation, and redirect endpoints.
+- Add automated tests for auth callback handling, link creation, redirect resolution, expiry, disablement, and cache behavior.
 
----
+### Medium Priority
+
+- Add link editing for destination URL, expiry, and active status.
+- Add alias retirement rules so disabled/deleted custom aliases cannot be reused accidentally.
+- Add structured error codes for frontend display and API consumers.
+- Add production-safe security headers, including CSP.
+- Add CSRF protection for cookie-authenticated state-changing requests.
+
+### Low Priority
+
+- Add click counts and basic analytics.
+- Add advanced analytics such as referrers, device type, and geolocation.
+- Add malicious-link scanning or phishing-risk checks.
+- Add bulk link creation and CSV export.
+- Add teams or organization-level link ownership.
+- Add non-Singpass auth methods only if there is a clear product need.
+
+## Non-Functional Requirements
+
+- Redirects should remain highly available because active short links depend on them.
+- Redirect lookup should stay optimized for read-heavy traffic.
+- Short-code generation must be concurrency-safe.
+- The system should avoid storing unnecessary personal data; current storage is limited to Singpass `sub`, optional display name, and link ownership metadata.
+- Production deployment should keep the backend private where possible and expose only the frontend and MockPass services publicly.
 
 ## Success Metrics
 
-- Singpass (MockPass) login flow is functional end-to-end in the demo environment.
-- Public redirect flow works without any authentication headers and resolves within the < 50ms p99 target under basic simulated load.
-- Authenticated user can create, view, and delete their own links via the dashboard UI.
+- Users can complete MockPass/Singpass login and reach the dashboard.
+- Authenticated users can create, list, copy, QR-share, expire, and disable links.
+- Public users can open active short links without authentication.
+- Expired or disabled links stop redirecting immediately after cache invalidation or expiry.
+- Railway deployment passes health checks for frontend, backend, PostgreSQL, Redis, and MockPass.
