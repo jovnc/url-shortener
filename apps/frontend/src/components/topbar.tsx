@@ -1,8 +1,22 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { ChevronDown, LogOut, ShieldCheck } from "lucide-react";
+import { ChevronDown, LogOut } from "lucide-react";
 import type { User } from "@/lib/types";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
 
 interface TopbarProps {
   user: User;
@@ -19,71 +33,95 @@ function initials(name: string | null, sub: string): string {
   return sub.slice(0, 2).toUpperCase();
 }
 
+const triggerClassName =
+  "flex cursor-pointer items-center gap-2 rounded-full border border-line bg-white/60 py-1.5 pr-3 pl-1.5 text-sm backdrop-blur-md transition-colors hover:bg-white/80";
+
+function TriggerContent({ user }: { user: User }) {
+  return (
+    <>
+      <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-brand to-brand-deep text-xs font-bold text-white">
+        {initials(user.name, user.sub)}
+      </span>
+      <span className="flex min-w-0 flex-col leading-tight">
+        <span className="truncate text-xs font-semibold text-ink">
+          {user.name ?? user.sub}
+        </span>
+      </span>
+      <ChevronDown className="ml-1 size-3.5 text-muted-ink" />
+    </>
+  );
+}
+
 export function Topbar({ user, onLogout }: TopbarProps) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    function closeOnPointer(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node))
-        setOpen(false);
-    }
-    function closeOnEscape(e: KeyboardEvent) {
-      if (e.key === "Escape") setOpen(false);
-    }
-
-    document.addEventListener("mousedown", closeOnPointer);
-    document.addEventListener("keydown", closeOnEscape);
-    return () => {
-      document.removeEventListener("mousedown", closeOnPointer);
-      document.removeEventListener("keydown", closeOnEscape);
-    };
-  }, [open]);
-
   return (
     <nav className="sticky top-0 z-10 mx-auto flex w-[min(920px,calc(100%-32px))] justify-end py-3 backdrop-blur-xl bg-surface/70">
-      <div ref={ref} className="relative">
-        <button
-          type="button"
-          onClick={() => setOpen((v) => !v)}
-          aria-expanded={open}
-          aria-haspopup="menu"
-          aria-label="Account menu"
-          className="flex cursor-pointer items-center gap-2 rounded-full border border-line bg-white/60 py-1.5 pr-3 pl-1.5 text-sm backdrop-blur-md transition-colors hover:bg-white/80"
-        >
-          <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-brand to-brand-deep text-xs font-bold text-white">
-            {initials(user.name, user.sub)}
-          </span>
-          <span className="flex min-w-0 flex-col leading-tight">
-            <span className="truncate text-xs font-semibold text-ink">
-              {user.name ?? user.sub}
-            </span>
-          </span>
-          <ChevronDown
-            className={`ml-1 size-3.5 text-muted-ink transition-transform ${open ? "rotate-180" : ""}`}
-          />
-        </button>
-
-        {open && (
-          <div
-            role="menu"
-            className="absolute right-0 mt-1.5 w-44 rounded-xl border border-line bg-white/80 p-1 shadow-lg backdrop-blur-xl"
+      {/* Desktop: dropdown menu (sm and above) */}
+      <div className="hidden sm:block">
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <button
+                type="button"
+                aria-label="Account menu"
+                className={triggerClassName}
+              />
+            }
           >
-            <button
-              type="button"
-              role="menuitem"
-              onClick={() => {
-                setOpen(false);
-                onLogout();
-              }}
-              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-ink transition-colors hover:bg-brand-tint hover:text-brand-dark hover:cursor-pointer"
+            <TriggerContent user={user} />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="end"
+            className="w-44 rounded-xl border border-line bg-white/80 p-1 shadow-lg backdrop-blur-xl"
+          >
+            <DropdownMenuItem
+              onClick={onLogout}
+              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-ink hover:bg-brand-tint hover:text-brand-dark hover:cursor-pointer"
             >
               <LogOut className="size-3.5" />
               Sign out
-            </button>
-          </div>
-        )}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      {/* Mobile: bottom sheet (below sm) */}
+      <div className="block sm:hidden">
+        <Sheet>
+          <SheetTrigger
+            render={
+              <button
+                type="button"
+                aria-label="Account menu"
+                className={triggerClassName}
+              />
+            }
+          >
+            <TriggerContent user={user} />
+          </SheetTrigger>
+          <SheetContent
+            side="bottom"
+            className="rounded-t-2xl border-line bg-white pb-[calc(env(safe-area-inset-bottom)+1rem)]"
+          >
+            <SheetHeader className="text-left">
+              <SheetTitle className="text-base">
+                {user.name ?? user.sub}
+              </SheetTitle>
+              <SheetDescription className="text-xs text-muted-ink">
+                Singpass-verified account
+              </SheetDescription>
+            </SheetHeader>
+            <div className="mt-4 grid gap-2 px-4 pb-2">
+              <Button
+                variant="ghost"
+                onClick={onLogout}
+                className="h-12 w-full justify-start gap-3 px-3 text-sm font-medium text-ink hover:bg-brand-tint hover:text-brand-dark"
+              >
+                <LogOut className="size-4" />
+                Sign out
+              </Button>
+            </div>
+          </SheetContent>
+        </Sheet>
       </div>
     </nav>
   );

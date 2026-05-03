@@ -13,10 +13,10 @@ import { cn } from "@/lib/utils";
 import type { Link } from "@/lib/types";
 
 const EXPIRY_PRESETS = [
-  { id: "never", label: "Never" },
-  { id: "24h", label: "24 hours" },
-  { id: "7d", label: "7 days" },
-  { id: "30d", label: "30 days" },
+  { id: "never", label: "Never", shortLabel: "Never" },
+  { id: "24h", label: "24 hours", shortLabel: "24 h" },
+  { id: "7d", label: "7 days", shortLabel: "7 d" },
+  { id: "30d", label: "30 days", shortLabel: "30 d" },
 ] as const;
 
 type ExpiryPreset = (typeof EXPIRY_PRESETS)[number]["id"];
@@ -132,20 +132,21 @@ export function CreateLinkForm({ onCreated }: CreateLinkFormProps) {
                 <Label className="mb-2 text-[11px] font-bold tracking-[0.08em] text-[#9A8E78] uppercase">
                   Expires after
                 </Label>
-                <div className="flex h-13 gap-1.5 rounded-[10px] bg-[#F5F1E8] p-1.5">
+                <div className="flex h-13 gap-1 rounded-[10px] bg-[#F5F1E8] p-1 sm:gap-1.5 sm:p-1.5">
                   {EXPIRY_PRESETS.map((p) => (
                     <button
                       key={p.id}
                       type="button"
                       onClick={() => setExpiry(p.id)}
                       className={cn(
-                        "flex-1 rounded-[7px] text-[13px] font-semibold transition-all",
+                        "min-w-0 flex-1 rounded-[7px] text-[12px] font-semibold transition-all sm:text-[13px]",
                         expiry === p.id
                           ? "bg-white text-ink shadow-[0_1px_2px_rgb(0_0_0/0.06)]"
                           : "bg-transparent text-[#7A6F5C]",
                       )}
                     >
-                      {p.label}
+                      <span className="hidden sm:inline">{p.label}</span>
+                      <span className="sm:hidden">{p.shortLabel}</span>
                     </button>
                   ))}
                 </div>

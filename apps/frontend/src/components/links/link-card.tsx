@@ -9,6 +9,14 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import type { Link } from "@/lib/types";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface LinkCardProps {
   link: Link;
@@ -40,51 +48,6 @@ function shortHost(url: string): string {
   } catch {
     return url;
   }
-}
-
-interface DeleteModalProps {
-  link: Link;
-  onConfirm: () => void;
-  onCancel: () => void;
-}
-
-function DeleteModal({ link, onConfirm, onCancel }: DeleteModalProps) {
-  return (
-    <div
-      onClick={onCancel}
-      className="fixed inset-0 z-50 flex animate-[trace-fade-in_180ms_ease-out] items-center justify-center bg-[rgb(26_23_20/0.42)] p-4 backdrop-blur"
-    >
-      <Card
-        onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-110 animate-[trace-pop-in_240ms_cubic-bezier(0.2,0.8,0.2,1)] border-0 bg-white p-7 shadow-[0_30px_80px_rgb(0_0_0/0.25)]"
-      >
-        <h3 className="mb-1.5 text-lg font-bold tracking-[-0.01em] text-ink">
-          Disable this link?
-        </h3>
-        <p className="mb-5 text-sm leading-normal text-[#7A6F5C]">
-          <span className="font-mono text-ink">
-            {shortHost(link.shortUrl)}/{link.shortCode}
-          </span>{" "}
-          will stop redirecting immediately.
-        </p>
-        <div className="flex justify-end gap-2.5">
-          <Button
-            variant="outline"
-            onClick={onCancel}
-            className="h-10 border-line bg-white px-4.5 text-sm font-semibold text-ink"
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={onConfirm}
-            className="h-10 bg-brand px-4.5 text-sm font-semibold text-white hover:bg-brand-dark"
-          >
-            Disable link
-          </Button>
-        </div>
-      </Card>
-    </div>
-  );
 }
 
 export function LinkCard({ link, isNew, onDisable }: LinkCardProps) {
@@ -210,6 +173,7 @@ export function LinkCard({ link, isNew, onDisable }: LinkCardProps) {
                 variant="outline"
                 size="icon-lg"
                 onClick={() => setQrOpen(!qrOpen)}
+                aria-label="Show QR code"
                 title="QR code"
                 className={cn(
                   "size-10 border-line shadow-[0_1px_0_rgb(31_27_20/0.04)]",
@@ -242,6 +206,7 @@ export function LinkCard({ link, isNew, onDisable }: LinkCardProps) {
                 variant="outline"
                 size="icon-lg"
                 onClick={() => setConfirmDelete(true)}
+                aria-label="Disable link"
                 title="Disable"
                 className="size-10 border-line bg-white text-[#9A8E78] hover:border-[#E5A7A7] hover:bg-[#FFF0EE] hover:text-brand-dark"
               >
@@ -269,13 +234,42 @@ export function LinkCard({ link, isNew, onDisable }: LinkCardProps) {
         )}
       </Card>
 
-      {confirmDelete && (
-        <DeleteModal
-          link={link}
-          onConfirm={() => void handleDisable()}
-          onCancel={() => setConfirmDelete(false)}
-        />
-      )}
+      <Dialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+        <DialogContent
+          showCloseButton={false}
+          className="max-w-110 bg-white p-7 ring-0 shadow-[0_30px_80px_rgb(0_0_0/0.25)]"
+        >
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold tracking-[-0.01em] text-ink">
+              Disable this link?
+            </DialogTitle>
+            <DialogDescription className="text-sm leading-normal text-[#7A6F5C]">
+              <span className="font-mono text-ink">
+                {host}/{link.shortCode}
+              </span>{" "}
+              will stop redirecting immediately.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col-reverse gap-2.5 sm:flex-row sm:justify-end">
+            <DialogClose
+              render={
+                <Button
+                  variant="outline"
+                  className="h-10 border-line bg-white px-4.5 text-sm font-semibold text-ink"
+                />
+              }
+            >
+              Cancel
+            </DialogClose>
+            <Button
+              onClick={() => void handleDisable()}
+              className="h-10 bg-brand px-4.5 text-sm font-semibold text-white hover:bg-brand-dark"
+            >
+              Disable link
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
