@@ -14,7 +14,13 @@ import { ShortCodeGenerator } from './short-code-generator.js';
 
 const SHORT_CODE_PATTERN = /^[0-9a-zA-Z-]+$/;
 const RESERVED_CODES = new Set([
-  'api', 'auth', 'health', 'links', 'login', 'logout', 'me',
+  'api',
+  'auth',
+  'health',
+  'links',
+  'login',
+  'logout',
+  'me',
 ]);
 const REDIRECT_CACHE_PREFIX = 'links:redirect:';
 const REDIRECT_CACHE_TTL_SECONDS = 15 * 60;
@@ -101,7 +107,9 @@ export class LinksService {
         if (customShortCode) {
           throw new ConflictException('That short code is already taken');
         }
-        throw new ServiceUnavailableException('Short-code counter state is invalid');
+        throw new ServiceUnavailableException(
+          'Short-code counter state is invalid',
+        );
       }
       throw error;
     }

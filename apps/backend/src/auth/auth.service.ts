@@ -47,12 +47,12 @@ export class AuthService implements OnModuleInit {
       generateKeyPair('ECDH-ES+A256KW', { crv: 'P-256', extractable: true }),
     ]);
     this.signingKeyPair = {
-      publicKey: sigPair.publicKey as CryptoKey,
-      privateKey: sigPair.privateKey as CryptoKey,
+      publicKey: sigPair.publicKey,
+      privateKey: sigPair.privateKey,
     };
     this.encKeyPair = {
-      publicKey: encPair.publicKey as CryptoKey,
-      privateKey: encPair.privateKey as CryptoKey,
+      publicKey: encPair.publicKey,
+      privateKey: encPair.privateKey,
     };
 
     const [sigJwk, encJwk] = await Promise.all([
@@ -65,7 +65,6 @@ export class AuthService implements OnModuleInit {
         { ...encJwk, alg: 'ECDH-ES+A256KW', use: 'enc', kid: 'enc-key-1' },
       ],
     };
-
   }
 
   getPublicJwks() {
@@ -134,9 +133,9 @@ export class AuthService implements OnModuleInit {
     const name = subAttrs?.name ?? null;
 
     const user = await this.prisma.user.upsert({
-      where: { sub: claims.sub! },
+      where: { sub: claims.sub },
       update: { name },
-      create: { sub: claims.sub!, name },
+      create: { sub: claims.sub, name },
     });
 
     const sessionToken = await this.jwtService.signAsync({

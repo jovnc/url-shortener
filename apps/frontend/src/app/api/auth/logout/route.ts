@@ -1,6 +1,6 @@
-import { NextRequest } from 'next/server';
-import { proxyBackend } from '@/lib/backend';
+import { NextRequest } from "next/server";
+import { proxyBackend } from "@/lib/backend";
 
 export function POST(request: NextRequest) {
-  return proxyBackend(request, '/api/v1/auth/logout');
+  return proxyBackend(request, "/api/v1/auth/logout");
 }

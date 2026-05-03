@@ -1,7 +1,4 @@
-import {
-  registerDecorator,
-  type ValidationOptions,
-} from 'class-validator';
+import { registerDecorator, type ValidationOptions } from 'class-validator';
 
 function validate(value: unknown): boolean {
   if (typeof value !== 'string') return false;

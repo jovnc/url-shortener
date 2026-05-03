@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { QRCodeSVG } from 'qrcode.react';
+import { QRCodeSVG } from "qrcode.react";
 
 interface QRBlockProps {
   value: string;

@@ -1,5 +1,5 @@
-import { NextRequest } from 'next/server';
-import { proxyBackend } from '@/lib/backend';
+import { NextRequest } from "next/server";
+import { proxyBackend } from "@/lib/backend";
 
 export async function DELETE(
   request: NextRequest,
