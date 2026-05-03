@@ -1,3 +1,4 @@
+# For local development only. This file is not used in production.
 services:
   postgres:
     image: postgres:18-alpine

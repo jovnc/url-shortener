@@ -1,0 +1,4 @@
+pnpm exec lint-staged
+
+pnpm --filter ./apps/backend run typecheck
+pnpm --filter ./apps/frontend run typecheck
