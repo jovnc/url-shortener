@@ -87,10 +87,10 @@ export function CreateLinkForm({ onCreated }: CreateLinkFormProps) {
         <form onSubmit={handleSubmit}>
           <div className="mb-5 flex items-baseline justify-between gap-4 max-sm:flex-col max-sm:items-start">
             <div>
-              <h2 className="text-xl font-bold tracking-[-0.015em] text-ink">
+              <h2 className="text-xl font-bold tracking-heading text-ink">
                 New short link
               </h2>
-              <p className="mt-1 text-[13px] text-[#7A6F5C]">
+              <p className="mt-1 text-sm text-stone-500">
                 Paste a long URL. Customise the alias if you want.
               </p>
             </div>
@@ -98,30 +98,30 @@ export function CreateLinkForm({ onCreated }: CreateLinkFormProps) {
               variant="ghost"
               type="button"
               onClick={() => setAdvanced(!advanced)}
-              className="h-auto shrink-0 p-0 text-[13px] font-semibold text-brand hover:bg-transparent hover:text-brand-dark"
+              className="h-auto shrink-0 p-0 text-sm font-semibold text-brand hover:bg-transparent hover:text-brand-dark"
             >
               {advanced ? "Hide options" : "Advanced options"}
             </Button>
           </div>
 
           <div className={cn(advanced ? "mb-3.5" : "mb-5")}>
-            <Label className="mb-2 text-[11px] font-bold tracking-[0.08em] text-[#9A8E78] uppercase">
+            <Label className="mb-2 text-2xs font-bold tracking-micro text-stone-400 uppercase">
               Destination URL
             </Label>
             <div
               className={cn(
-                "flex h-13 items-center gap-2.5 rounded-[10px] border-[1.5px] bg-surface px-3.5 transition-colors",
-                url && !validUrl ? "border-[#E5A7A7]" : "border-line-soft",
+                "flex h-13 items-center gap-2.5 rounded-lg border-[1.5px] bg-surface px-3.5 transition-colors",
+                url && !validUrl ? "border-red-300" : "border-line-soft",
               )}
             >
-              <Link2 className="size-4.5 shrink-0 text-[#9A8E78]" />
+              <Link2 className="size-4.5 shrink-0 text-stone-400" />
               <input
                 type="url"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 placeholder="https://example.com/very-long-url"
                 required
-                className="h-full min-w-0 flex-1 border-0 bg-transparent p-0 text-[15px] text-ink outline-none placeholder:text-[#9A8E78] focus:ring-0"
+                className="h-full min-w-0 flex-1 border-0 bg-transparent p-0 text-base text-ink outline-none placeholder:text-stone-400 focus:ring-0"
               />
             </div>
           </div>
@@ -129,20 +129,20 @@ export function CreateLinkForm({ onCreated }: CreateLinkFormProps) {
           {advanced && (
             <div className="mb-5 grid grid-cols-2 gap-3.5 max-sm:grid-cols-1">
               <div>
-                <Label className="mb-2 text-[11px] font-bold tracking-[0.08em] text-[#9A8E78] uppercase">
+                <Label className="mb-2 text-2xs font-bold tracking-micro text-stone-400 uppercase">
                   Expires after
                 </Label>
-                <div className="flex h-13 gap-1 rounded-[10px] bg-[#F5F1E8] p-1 sm:gap-1.5 sm:p-1.5">
+                <div className="flex h-13 gap-1 rounded-lg bg-stone-100 p-1 sm:gap-1.5 sm:p-1.5">
                   {EXPIRY_PRESETS.map((p) => (
                     <button
                       key={p.id}
                       type="button"
                       onClick={() => setExpiry(p.id)}
                       className={cn(
-                        "min-w-0 flex-1 rounded-[7px] text-[12px] font-semibold transition-all sm:text-[13px]",
+                        "min-w-0 flex-1 rounded-xs text-xs font-semibold transition-all sm:text-sm",
                         expiry === p.id
                           ? "bg-white text-ink shadow-[0_1px_2px_rgb(0_0_0/0.06)]"
-                          : "bg-transparent text-[#7A6F5C]",
+                          : "bg-transparent text-stone-500",
                       )}
                     >
                       <span className="hidden sm:inline">{p.label}</span>
@@ -153,7 +153,7 @@ export function CreateLinkForm({ onCreated }: CreateLinkFormProps) {
               </div>
 
               <div>
-                <Label className="mb-2 text-[11px] font-bold tracking-[0.08em] text-[#9A8E78] uppercase">
+                <Label className="mb-2 text-2xs font-bold tracking-micro text-stone-400 uppercase">
                   Custom alias{" "}
                   <span className="font-normal tracking-normal normal-case">
                     (optional)
@@ -166,9 +166,9 @@ export function CreateLinkForm({ onCreated }: CreateLinkFormProps) {
                   placeholder="my-link"
                   maxLength={50}
                   className={cn(
-                    "h-13 rounded-[10px] border-[1.5px] bg-surface px-3.5 text-[15px] text-ink placeholder:text-[#9A8E78]",
+                    "h-13 rounded-lg border-[1.5px] bg-surface px-3.5 text-base text-ink placeholder:text-stone-400",
                     customCode && !validCustomCode
-                      ? "border-[#E5A7A7]"
+                      ? "border-red-300"
                       : "border-line-soft",
                   )}
                 />
@@ -184,7 +184,7 @@ export function CreateLinkForm({ onCreated }: CreateLinkFormProps) {
           <Button
             type="submit"
             disabled={!canSubmit}
-            className="h-13 w-full rounded-[10px] bg-brand text-[15px] font-semibold tracking-[-0.005em] text-white hover:bg-brand-dark disabled:bg-line-soft disabled:text-white"
+            className="h-13 w-full rounded-lg bg-brand text-base font-semibold tracking-dense text-white hover:bg-brand-dark"
           >
             {saving ? (
               <>

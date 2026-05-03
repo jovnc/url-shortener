@@ -6,8 +6,6 @@ import { LinkCard } from "./link-card";
 import { LinkCardSkeleton } from "./link-card-skeleton";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { pillControl } from "@/lib/styles";
-import { cn } from "@/lib/utils";
 import type { Link } from "@/lib/types";
 
 interface LinkListProps {
@@ -52,12 +50,12 @@ export function LinkList({
           value={filter}
           onValueChange={(v) => setFilter(v as StatusFilter)}
         >
-          <TabsList className={cn("max-sm:w-full", pillControl)}>
+          <TabsList>
             {FILTERS.map((item) => (
               <TabsTrigger
                 key={item.id}
                 value={item.id}
-                className="text-xs font-semibold text-[#7A6F5C] data-active:bg-white data-active:text-ink data-active:shadow-[0_1px_2px_rgb(0_0_0/0.06)]"
+                className="font-semibold text-stone-500 px-6 py-2"
               >
                 {item.label}
               </TabsTrigger>
@@ -81,7 +79,7 @@ export function LinkList({
             <p className="font-semibold text-ink">
               {links.length === 0 ? "No links yet" : `No ${filter} links`}
             </p>
-            <p className="mt-1 text-[13px] text-[#7A6F5C]">
+            <p className="mt-1 text-sm text-stone-500">
               {links.length === 0
                 ? "Create your first verified short link above."
                 : "Try another status filter."}

@@ -12,8 +12,8 @@ export function QRBlock({ value, size = 96 }: QRBlockProps) {
     <QRCodeSVG
       value={value}
       size={size}
-      bgColor="#ffffff"
-      fgColor="#1A1714"
+      bgColor="white"
+      fgColor="#1a1714"
       level="M"
     />
   );

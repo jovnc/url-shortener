@@ -71,7 +71,7 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-surface">
       <Topbar user={user} onLogout={() => void logout()} />
       <div className={pageShell}>
-        {error && <p className="mb-4 text-[13px] text-brand-dark">{error}</p>}
+        {error && <p className="mb-4 text-sm text-brand-dark">{error}</p>}
         <CreateLinkForm
           onCreated={(link) => {
             setLinks((current) => [link, ...current]);

@@ -14,23 +14,23 @@ function LandingVisual() {
     <div className="relative flex min-h-115 flex-col justify-center gap-3.5">
       <div className="flex items-center justify-center gap-3 py-1">
         <div className="h-px flex-1 bg-linear-to-r from-transparent to-line-soft" />
-        <Badge className="h-auto gap-1.5 bg-brand-tint px-2.5 py-1 text-[11px] font-bold tracking-[0.04em] text-brand-deep uppercase">
+        <Badge className="h-auto gap-1.5 bg-brand-tint px-2.5 py-1 text-2xs font-bold tracking-badge text-brand-deep uppercase">
           <ShieldCheck className="size-2.75" /> Verified creator
         </Badge>
         <div className="h-px flex-1 bg-linear-to-r from-line-soft to-transparent" />
       </div>
 
-      <Card className="rotate-[0.6deg] border-[1.5px] border-[rgb(244_51_61/0.2)] bg-white py-0 shadow-[0_18px_60px_rgb(244_51_61/0.13),0_1px_0_rgb(0_0_0/0.03)]">
+      <Card className="rotate-[0.6deg] border-[1.5px] border-brand/20 bg-white py-0 shadow-[0_18px_60px_rgb(244_51_61/0.13),0_1px_0_rgb(0_0_0/0.03)]">
         <CardContent className="grid grid-cols-[1fr_auto] items-center gap-4.5 p-5 max-sm:grid-cols-1">
           <div className="min-w-0">
-            <div className="mb-1 text-[11px] font-bold tracking-[0.06em] text-[#9A8E78] uppercase">
+            <div className="mb-1 text-2xs font-bold tracking-label text-stone-400 uppercase">
               Your verified short link
             </div>
-            <div className="truncate font-mono text-[22px] font-bold tracking-[-0.015em]">
-              <span className="font-medium text-[#9A8E78]">trace.gov.sg/</span>
+            <div className="truncate font-mono text-2xl font-bold tracking-heading">
+              <span className="font-medium text-stone-400">trace.gov.sg/</span>
               <span className="text-brand">budget-2026</span>
             </div>
-            <div className="mt-3 flex flex-wrap items-center gap-2.5 text-xs text-[#7A6F5C]">
+            <div className="mt-3 flex flex-wrap items-center gap-2.5 text-xs text-stone-500">
               <span className="inline-flex items-center gap-1 font-semibold text-brand-dark">
                 <ShieldCheck className="size-2.75" /> Created with Singpass
               </span>
@@ -51,10 +51,10 @@ function LandingVisual() {
           <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-brand">
             <ShieldCheck className="size-4 text-white" />
           </div>
-          <div className="text-[13px] leading-5 text-muted-ink">
+          <div className="text-sm leading-5 text-muted-ink">
             <strong className="text-ink">No anonymous creators.</strong> Every
-            Trace link starts from a Singpass-verified account, making scam
-            links easier to trace and stop.
+            link starts from a Singpass-verified account, making scam links
+            easier to trace and stop.
           </div>
         </CardContent>
       </Card>
@@ -91,13 +91,13 @@ export default function Home() {
             Singpass-verified link creation
           </Badge>
 
-          <h1 className="m-0 text-[clamp(52px,6vw,76px)] leading-[0.98] font-extrabold tracking-[-0.04em] text-ink">
+          <h1 className="m-0 text-[clamp(52px,6vw,76px)] leading-[0.98] font-extrabold tracking-tightest text-ink">
             Short links.
             <br />
             <span className="font-bold text-brand italic">Verified.</span>
           </h1>
 
-          <p className="mt-6 mb-8 max-w-120 text-[17px] leading-[1.55] text-muted-ink">
+          <p className="mt-6 mb-8 max-w-120 text-lg leading-[1.55] text-muted-ink">
             Only Singpass-verified users can create short links. Start today
             with your Singpass account.
           </p>

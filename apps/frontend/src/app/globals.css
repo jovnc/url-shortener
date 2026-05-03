@@ -70,17 +70,27 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+  --radius-xs: calc(var(--radius) * 0.7); /*  7px */
+  --radius-sm: calc(var(--radius) * 0.6); /*  6px */
+  --radius-md: calc(var(--radius) * 0.8); /*  8px */
+  --radius-lg: var(--radius); /* 10px */
+  --radius-xl: calc(var(--radius) * 1.4); /* 14px */
+  --radius-2xl: calc(var(--radius) * 1.8); /* 18px */
+  --radius-3xl: calc(var(--radius) * 2.2); /* 22px */
+  --radius-4xl: calc(var(--radius) * 2.6); /* 26px */
+  --text-2xs: 0.6875rem; /* 11px — micro labels */
+  /* Fine-tuned letter-spacing */
+  --tracking-tightest: -0.04em; /* large display headings  */
+  --tracking-heading: -0.015em; /* regular headings        */
+  --tracking-dense: -0.005em; /* buttons / prominent UI  */
+  --tracking-ui: -0.01em; /* inline UI text          */
+  --tracking-badge: 0.04em; /* badges / tags           */
+  --tracking-label: 0.06em; /* section labels          */
+  --tracking-micro: 0.08em; /* uppercase micro labels  */
 }
 
 body {
-  background: #fdfcf9;
+  background: var(--app-background);
   color: var(--app-foreground);
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
 }

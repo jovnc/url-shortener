@@ -38,7 +38,7 @@ const triggerClassName =
 
 function TriggerContent({ user }: { user: User }) {
   return (
-    <>
+    <div className="flex items-center gap-2">
       <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-brand to-brand-deep text-xs font-bold text-white">
         {initials(user.name, user.sub)}
       </span>
@@ -48,7 +48,7 @@ function TriggerContent({ user }: { user: User }) {
         </span>
       </span>
       <ChevronDown className="ml-1 size-3.5 text-muted-ink" />
-    </>
+    </div>
   );
 }
 
