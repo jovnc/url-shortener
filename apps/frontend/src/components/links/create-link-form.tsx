@@ -38,7 +38,6 @@ export function CreateLinkForm({ onCreated }: CreateLinkFormProps) {
   const [url, setUrl] = useState("");
   const [expiry, setExpiry] = useState<ExpiryPreset>("never");
   const [customCode, setCustomCode] = useState("");
-  const [advanced, setAdvanced] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const validUrl = /^https?:\/\/.+/.test(url);
@@ -72,7 +71,6 @@ export function CreateLinkForm({ onCreated }: CreateLinkFormProps) {
       setUrl("");
       setExpiry("never");
       setCustomCode("");
-      setAdvanced(false);
       toast.success("Short link created!");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Unable to create link");
@@ -85,26 +83,16 @@ export function CreateLinkForm({ onCreated }: CreateLinkFormProps) {
     <div className="grid gap-2">
       <Card className={cn(panelCard, "p-7")}>
         <form onSubmit={handleSubmit}>
-          <div className="mb-5 flex items-baseline justify-between gap-4 max-sm:flex-col max-sm:items-start">
-            <div>
-              <h2 className="text-xl font-bold tracking-heading text-ink">
-                New short link
-              </h2>
-              <p className="mt-1 text-sm text-stone-500">
-                Paste a long URL. Customise the alias if you want.
-              </p>
-            </div>
-            <Button
-              variant="ghost"
-              type="button"
-              onClick={() => setAdvanced(!advanced)}
-              className="h-auto shrink-0 p-0 text-sm font-semibold text-brand hover:bg-transparent hover:text-brand-dark"
-            >
-              {advanced ? "Hide options" : "Advanced options"}
-            </Button>
+          <div className="mb-5">
+            <h2 className="text-xl font-bold tracking-heading text-ink">
+              New short link
+            </h2>
+            <p className="mt-1 text-sm text-stone-500">
+              Paste a long URL. Customise the alias if you want.
+            </p>
           </div>
 
-          <div className={cn(advanced ? "mb-3.5" : "mb-5")}>
+          <div className="mb-3.5">
             <Label className="mb-2 text-2xs font-bold tracking-micro text-stone-400 uppercase">
               Destination URL
             </Label>
@@ -126,60 +114,58 @@ export function CreateLinkForm({ onCreated }: CreateLinkFormProps) {
             </div>
           </div>
 
-          {advanced && (
-            <div className="mb-5 grid grid-cols-2 gap-3.5 max-sm:grid-cols-1">
-              <div>
-                <Label className="mb-2 text-2xs font-bold tracking-micro text-stone-400 uppercase">
-                  Expires after
-                </Label>
-                <div className="flex h-13 gap-1 rounded-lg bg-stone-100 p-1 sm:gap-1.5 sm:p-1.5">
-                  {EXPIRY_PRESETS.map((p) => (
-                    <button
-                      key={p.id}
-                      type="button"
-                      onClick={() => setExpiry(p.id)}
-                      className={cn(
-                        "min-w-0 flex-1 rounded-xs text-xs font-semibold transition-all sm:text-sm",
-                        expiry === p.id
-                          ? "bg-white text-ink shadow-[0_1px_2px_rgb(0_0_0/0.06)]"
-                          : "bg-transparent text-stone-500",
-                      )}
-                    >
-                      <span className="hidden sm:inline">{p.label}</span>
-                      <span className="sm:hidden">{p.shortLabel}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <Label className="mb-2 text-2xs font-bold tracking-micro text-stone-400 uppercase">
-                  Custom alias{" "}
-                  <span className="font-normal tracking-normal normal-case">
-                    (optional)
-                  </span>
-                </Label>
-                <Input
-                  type="text"
-                  value={customCode}
-                  onChange={(e) => setCustomCode(e.target.value)}
-                  placeholder="my-link"
-                  maxLength={50}
-                  className={cn(
-                    "h-13 rounded-lg border-[1.5px] bg-surface px-3.5 text-base text-ink placeholder:text-stone-400",
-                    customCode && !validCustomCode
-                      ? "border-red-300"
-                      : "border-line-soft",
-                  )}
-                />
-                {customCode && !validCustomCode && (
-                  <p className="mt-1 text-xs text-brand-dark">
-                    Min 3 chars, letters, numbers, and hyphens only
-                  </p>
-                )}
+          <div className="mb-5 grid grid-cols-2 gap-3.5 max-sm:grid-cols-1">
+            <div>
+              <Label className="mb-2 text-2xs font-bold tracking-micro text-stone-400 uppercase">
+                Expires after
+              </Label>
+              <div className="flex h-13 gap-1 rounded-lg bg-stone-100 p-1 sm:gap-1.5 sm:p-1.5">
+                {EXPIRY_PRESETS.map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => setExpiry(p.id)}
+                    className={cn(
+                      "min-w-0 flex-1 rounded-xs text-xs font-semibold transition-all sm:text-sm",
+                      expiry === p.id
+                        ? "bg-white text-ink shadow-[0_1px_2px_rgb(0_0_0/0.06)]"
+                        : "bg-transparent text-stone-500",
+                    )}
+                  >
+                    <span className="hidden sm:inline">{p.label}</span>
+                    <span className="sm:hidden">{p.shortLabel}</span>
+                  </button>
+                ))}
               </div>
             </div>
-          )}
+
+            <div>
+              <Label className="mb-2 text-2xs font-bold tracking-micro text-stone-400 uppercase">
+                Custom alias{" "}
+                <span className="font-normal tracking-normal normal-case">
+                  (optional)
+                </span>
+              </Label>
+              <Input
+                type="text"
+                value={customCode}
+                onChange={(e) => setCustomCode(e.target.value)}
+                placeholder="my-link"
+                maxLength={50}
+                className={cn(
+                  "h-13 rounded-lg border-[1.5px] bg-surface px-3.5 text-base text-ink placeholder:text-stone-400",
+                  customCode && !validCustomCode
+                    ? "border-red-300"
+                    : "border-line-soft",
+                )}
+              />
+              {customCode && !validCustomCode && (
+                <p className="mt-1 text-xs text-brand-dark">
+                  Min 3 chars, letters, numbers, and hyphens only
+                </p>
+              )}
+            </div>
+          </div>
 
           <Button
             type="submit"
