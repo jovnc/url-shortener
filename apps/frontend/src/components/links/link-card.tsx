@@ -44,7 +44,7 @@ function fmtRelative(iso: string): string {
 
 function shortHost(url: string): string {
   try {
-    return new URL(url).hostname.replace(/^www\./, "");
+    return new URL(url).host.replace(/^www\./, "");
   } catch {
     return url;
   }
@@ -122,9 +122,12 @@ export function LinkCard({ link, isNew, onDisable }: LinkCardProps) {
 
           <div className="min-w-0 px-5 py-4.5 sm:px-6 sm:py-5">
             <div className="mb-2 flex min-w-0 flex-wrap items-center gap-2">
-              <span
+              <a
+                href={link.shortUrl}
+                target="_blank"
+                rel="noopener noreferrer"
                 className={cn(
-                  "min-w-0 truncate font-mono text-lg font-bold tracking-ui sm:text-xl",
+                  "min-w-0 truncate font-mono text-lg font-bold tracking-ui hover:underline sm:text-xl",
                   status !== "active" && "line-through decoration-stone-400",
                 )}
               >
@@ -136,7 +139,7 @@ export function LinkCard({ link, isNew, onDisable }: LinkCardProps) {
                 >
                   {link.shortCode}
                 </span>
-              </span>
+              </a>
             </div>
 
             <div className="flex items-center gap-1.5 truncate rounded-lg bg-stone-50 px-2.5 py-2 text-sm text-stone-500">
