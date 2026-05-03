@@ -49,14 +49,11 @@ export function LinkList({
         <Tabs
           value={filter}
           onValueChange={(v) => setFilter(v as StatusFilter)}
+          className="w-full"
         >
-          <TabsList>
+          <TabsList className="!h-9 w-full gap-1 rounded-lg bg-stone-100 p-1">
             {FILTERS.map((item) => (
-              <TabsTrigger
-                key={item.id}
-                value={item.id}
-                className="font-semibold text-stone-500 px-6 py-2"
-              >
+              <TabsTrigger key={item.id} value={item.id} className="text-xs">
                 {item.label}
               </TabsTrigger>
             ))}

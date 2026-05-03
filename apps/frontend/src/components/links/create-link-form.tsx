@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { panelCard } from "@/lib/styles";
 import { cn } from "@/lib/utils";
 import type { Link } from "@/lib/types";
@@ -119,24 +120,23 @@ export function CreateLinkForm({ onCreated }: CreateLinkFormProps) {
               <Label className="mb-2 text-2xs font-bold tracking-micro text-stone-400 uppercase">
                 Expires after
               </Label>
-              <div className="flex h-13 gap-1 rounded-lg bg-stone-100 p-1 sm:gap-1.5 sm:p-1.5">
-                {EXPIRY_PRESETS.map((p) => (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => setExpiry(p.id)}
-                    className={cn(
-                      "min-w-0 flex-1 rounded-xs text-xs font-semibold transition-all sm:text-sm",
-                      expiry === p.id
-                        ? "bg-white text-ink shadow-[0_1px_2px_rgb(0_0_0/0.06)]"
-                        : "bg-transparent text-stone-500",
-                    )}
-                  >
-                    <span className="hidden sm:inline">{p.label}</span>
-                    <span className="sm:hidden">{p.shortLabel}</span>
-                  </button>
-                ))}
-              </div>
+              <Tabs
+                value={expiry}
+                onValueChange={(v) => setExpiry(v as ExpiryPreset)}
+              >
+                <TabsList className="!h-13 w-full gap-1 rounded-lg bg-stone-100 p-1 sm:gap-1.5 sm:p-1.5">
+                  {EXPIRY_PRESETS.map((p) => (
+                    <TabsTrigger
+                      key={p.id}
+                      value={p.id}
+                      className="text-xs sm:text-sm"
+                    >
+                      <span className="hidden sm:inline">{p.label}</span>
+                      <span className="sm:hidden">{p.shortLabel}</span>
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </Tabs>
             </div>
 
             <div>
