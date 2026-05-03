@@ -1,9 +1,60 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, HttpException, HttpStatus } from '@nestjs/common';
+import { PrismaService } from './database/prisma.service.js';
+import { RedisService } from './redis/redis.service.js';
+
+enum ServiceStatus {
+  OK = 'ok',
+  ERROR = 'error',
+}
+
+enum HealthStatus {
+  OK = 'ok',
+  DEGRADED = 'degraded',
+}
 
 @Controller('health')
 export class HealthController {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly redis: RedisService,
+  ) {}
+
   @Get()
-  check() {
-    return { status: 'ok' };
+  async check() {
+    const [database, redis] = await Promise.all([
+      this.checkDatabase(),
+      this.checkRedis(),
+    ]);
+
+    const status =
+      database === ServiceStatus.OK && redis === ServiceStatus.OK
+        ? HealthStatus.OK
+        : HealthStatus.DEGRADED;
+
+    const result = { status, services: { database, redis } };
+
+    if (status !== HealthStatus.OK) {
+      throw new HttpException(result, HttpStatus.SERVICE_UNAVAILABLE);
+    }
+
+    return result;
+  }
+
+  private async checkDatabase(): Promise<ServiceStatus> {
+    try {
+      await this.prisma.$queryRaw`SELECT 1`;
+      return ServiceStatus.OK;
+    } catch {
+      return ServiceStatus.ERROR;
+    }
+  }
+
+  private async checkRedis(): Promise<ServiceStatus> {
+    try {
+      await this.redis.ping();
+      return ServiceStatus.OK;
+    } catch {
+      return ServiceStatus.ERROR;
+    }
   }
 }
