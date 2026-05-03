@@ -5,17 +5,23 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --app-background: #f5f1e8;
-  --app-foreground: #1d1b16;
-  --app-muted: #6f695f;
-  --app-card: #fffdf8;
-  --app-accent: #111111;
+  --app-background: #FDFCF9;
+  --app-foreground: #1A1714;
+  --app-muted: #5C544A;
+  --app-card: #FDFCF9;
+  --app-accent: #F4333D;
   --muted: oklch(0.97 0 0);
-  --line: #ded8cf;
+  --line: #EDE9E3;
+  --line-soft: #E5DFD6;
   --card: oklch(1 0 0);
   --accent: oklch(0.97 0 0);
-  --accent-soft: #efe6d5;
-  --danger: #8f1d1d;
+  --accent-soft: #FFE9EA;
+  --danger: #C1242C;
+  /* Red palette */
+  --red-primary: #F4333D;
+  --red-dark: #C1242C;
+  --red-deeper: #8E1820;
+  --red-tint: #FFE9EA;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card-foreground: oklch(0.145 0 0);
@@ -92,9 +98,7 @@
 }
 
 body {
-  background:
-    radial-gradient(circle at top left, #fff7e7 0, transparent 360px),
-    linear-gradient(135deg, #f8f4ed 0%, var(--app-background) 48%, #ece5d9 100%);
+  background: #FDFCF9;
   color: var(--app-foreground);
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
 }
@@ -108,10 +112,26 @@ a {
   color: inherit;
 }
 
+@keyframes trace-slide-in {
+  from { opacity: 0; transform: translateY(-10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes trace-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes trace-pop-in {
+  from { opacity: 0; transform: scale(0.94); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes trace-spin {
+  to { transform: rotate(360deg); }
+}
+
 .shell {
   width: min(920px, calc(100% - 32px));
   margin: 0 auto;
-  padding: 64px 0;
+  padding: 40px 0 80px;
 }
 
 .auth-card {
@@ -236,13 +256,14 @@ input:focus {
 }
 
 .primary {
-  border-color: var(--app-accent);
-  background: var(--app-accent);
+  border-color: var(--red-primary);
+  background: var(--red-primary);
   color: #ffffff;
 }
 
 .primary:hover:not(:disabled) {
-  background: #2a251d;
+  background: var(--red-dark);
+  border-color: var(--red-dark);
 }
 
 .danger {

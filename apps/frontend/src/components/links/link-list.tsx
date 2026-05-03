@@ -1,20 +1,18 @@
-import { Link2 } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
-import { warmCard } from "@/lib/styles";
-import { LinkCard } from "./link-card";
-import { LinkCardSkeleton } from "./link-card-skeleton";
-import type { Link } from "@/lib/types";
+import { ShieldCheck } from 'lucide-react';
+import { LinkCard } from './link-card';
+import { LinkCardSkeleton } from './link-card-skeleton';
+import type { Link } from '@/lib/types';
 
 interface LinkListProps {
   links: Link[];
+  newLinkId?: string;
   loading?: boolean;
   onDisable: (id: string) => void;
 }
 
-export function LinkList({ links, loading, onDisable }: LinkListProps) {
+export function LinkList({ links, newLinkId, loading, onDisable }: LinkListProps) {
   return (
-    <section className="list" aria-label="Short links">
+    <section style={{ display: 'grid', gap: 12, marginTop: 20 }} aria-label="Short links">
       {loading ? (
         <>
           <LinkCardSkeleton />
@@ -22,24 +20,32 @@ export function LinkList({ links, loading, onDisable }: LinkListProps) {
           <LinkCardSkeleton />
         </>
       ) : links.length === 0 ? (
-        <Card className={cn(warmCard)}>
-          <CardContent className="py-14 flex flex-col items-center gap-4 text-center">
-            <div className="flex size-14 items-center justify-center rounded-full bg-[--accent-soft]">
-              <Link2 className="size-6 text-[--app-muted]" />
-            </div>
-            <div>
-              <p className="font-semibold text-[--app-foreground]">
-                No links yet
-              </p>
-              <p className="mt-1 text-sm text-[--app-muted]">
-                Create your first short link above.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+        <div style={{
+          background: '#fff', border: '1px solid #EDE9E3', borderRadius: 14,
+          padding: '56px 24px', display: 'flex', flexDirection: 'column',
+          alignItems: 'center', gap: 12, textAlign: 'center',
+        }}>
+          <div style={{
+            width: 52, height: 52, borderRadius: 12, background: '#FFE9EA',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <ShieldCheck size={24} color="#F4333D" />
+          </div>
+          <div>
+            <p style={{ margin: 0, fontWeight: 600, color: '#1A1714' }}>No links yet</p>
+            <p style={{ margin: '4px 0 0', fontSize: 13, color: '#7A6F5C' }}>
+              Create your first verified short link above.
+            </p>
+          </div>
+        </div>
       ) : (
-        links.map((link) => (
-          <LinkCard key={link.id} link={link} onDisable={onDisable} />
+        links.map(link => (
+          <LinkCard
+            key={link.id}
+            link={link}
+            isNew={link.id === newLinkId}
+            onDisable={onDisable}
+          />
         ))
       )}
     </section>
