@@ -29,6 +29,7 @@ Build a URL shortening service where link creation is tied to a Singpass-verifie
 - Authenticated users can disable their own links; disabled links stop redirecting and are hidden from sharing actions in the UI.
 - Dashboard shows active, expired, and disabled states.
 - Active links can be copied and displayed as QR codes.
+- Disablement is soft-deactivation; disabled links remain in PostgreSQL and aliases remain occupied.
 
 ### Redirects
 
@@ -82,15 +83,19 @@ Build a URL shortening service where link creation is tied to a Singpass-verifie
 - Redis caches redirect payloads for up to 15 minutes, capped by link expiry.
 - Redis `INCR` produces monotonically increasing short-code IDs encoded as Base62.
 - Link disablement invalidates the redirect cache.
+- Redis counter state must be preserved or reinitialized carefully when restoring data, because existing PostgreSQL links can conflict with newly generated codes if the counter is reset.
 
 ## Known Gaps
 
-- Public frontend redirect validation currently accepts alphanumeric short codes only, while the backend permits hyphens in custom aliases. This should be aligned before promoting hyphenated aliases heavily.
+- Public frontend redirect validation currently accepts alphanumeric short codes only, while the backend permits hyphens in custom aliases. This affects hyphenated custom aliases and should be aligned before promoting them heavily.
 - URL validation does not yet block private IP ranges, localhost, or internal hostnames.
 - There is no rate limiting on create, auth, or redirect endpoints.
+- There is no CSRF protection for cookie-authenticated state-changing requests.
 - There is no edit flow for changing destination URL, expiry, or active status after creation.
+- There is no permanent delete or reactivate flow.
 - Disabled aliases are not permanently retired as a separate domain concept; they remain existing inactive link records.
-- Test coverage is limited; comprehensive unit and integration tests are still needed.
+- Click counts and analytics are not implemented, even though product surfaces may reference sharing and traffic concepts.
+- Backend unit tests cover selected link-service, short-code generation, and JWT guard behavior. Auth callback tests, frontend tests, integration tests, end-to-end tests, and Redis/PostgreSQL-backed tests are still needed.
 
 ## Future Improvements
 
@@ -100,6 +105,7 @@ Build a URL shortening service where link creation is tied to a Singpass-verifie
 - Add SSRF-safe URL validation: block localhost, private IP ranges, link-local addresses, and internal hostnames.
 - Add rate limiting for login, link creation, and redirect endpoints.
 - Add automated tests for auth callback handling, link creation, redirect resolution, expiry, disablement, and cache behavior.
+- Add CSRF protection for cookie-authenticated state-changing requests.
 
 ### Medium Priority
 
@@ -107,7 +113,7 @@ Build a URL shortening service where link creation is tied to a Singpass-verifie
 - Add alias retirement rules so disabled/deleted custom aliases cannot be reused accidentally.
 - Add structured error codes for frontend display and API consumers.
 - Add production-safe security headers, including CSP.
-- Add CSRF protection for cookie-authenticated state-changing requests.
+- Add frontend, integration, and end-to-end test coverage for the main user journeys.
 
 ### Low Priority
 
@@ -123,6 +129,7 @@ Build a URL shortening service where link creation is tied to a Singpass-verifie
 - Redirects should remain highly available because active short links depend on them.
 - Redirect lookup should stay optimized for read-heavy traffic.
 - Short-code generation must be concurrency-safe.
+- Redis counter state must be treated as operational data and kept consistent with persisted links.
 - The system should avoid storing unnecessary personal data; current storage is limited to Singpass `sub`, optional display name, and link ownership metadata.
 - Production deployment should keep the backend private where possible and expose only the frontend and MockPass services publicly.
 
