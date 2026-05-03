@@ -6,6 +6,7 @@ ignoredBuiltDependencies:
   - '@nestjs/core'
   - '@prisma/engines'
   - '@scarf/scarf'
+  - msw
   - prisma
   - sharp
   - unrs-resolver

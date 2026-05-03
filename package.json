@@ -8,7 +8,7 @@
     "prepare": "husky",
     "fe": "pnpm --filter ./apps/frontend",
     "be": "pnpm --filter ./apps/backend",
-    "dev": "docker compose up -d && concurrently --names backend,frontend --prefix-colors cyan,magenta \"pnpm be start:dev\" \"pnpm fe dev\""
+    "dev": "docker compose up -d && concurrently --names backend,frontend --prefix-colors cyan,magenta \"pnpm be start:dev\" \"wait-on tcp:3001 && pnpm fe dev\""
   },
   "keywords": [],
   "author": "",
@@ -19,6 +19,7 @@
     "concurrently": "^9.2.1",
     "husky": "^9.1.7",
     "lint-staged": "^15.5.1",
-    "prettier": "^3.5.3"
+    "prettier": "^3.5.3",
+    "wait-on": "^9.0.5"
   }
 }
