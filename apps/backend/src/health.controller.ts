@@ -21,19 +21,22 @@ export class HealthController {
 
   @Get()
   async check() {
-    const [database, redis] = await Promise.all([
+    const [databaseStatus, redisStatus] = await Promise.all([
       this.checkDatabase(),
       this.checkRedis(),
     ]);
 
-    const status =
-      database === ServiceStatus.OK && redis === ServiceStatus.OK
+    const overallStatus =
+      databaseStatus === ServiceStatus.OK && redisStatus === ServiceStatus.OK
         ? HealthStatus.OK
         : HealthStatus.DEGRADED;
 
-    const result = { status, services: { database, redis } };
+    const result = {
+      status: overallStatus,
+      services: { database: databaseStatus, redis: redisStatus },
+    };
 
-    if (status !== HealthStatus.OK) {
+    if (overallStatus !== HealthStatus.OK) {
       throw new HttpException(result, HttpStatus.SERVICE_UNAVAILABLE);
     }
 

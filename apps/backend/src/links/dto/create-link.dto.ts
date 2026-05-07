@@ -1,14 +1,14 @@
 import {
   IsISO8601,
   IsOptional,
+  IsUrl,
   Matches,
   MaxLength,
   MinLength,
 } from 'class-validator';
-import { IsShortableUrl } from './is-shortable-url.decorator.js';
 
 export class CreateLinkDto {
-  @IsShortableUrl()
+  @IsUrl()
   @MaxLength(2048)
   originalUrl!: string;
 
