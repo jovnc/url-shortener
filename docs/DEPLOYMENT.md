@@ -74,16 +74,16 @@ export JWT_SECRET="$(openssl rand -base64 32)"
 
 Backend variables:
 
-| Variable | Value |
-| --- | --- |
-| `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` |
-| `REDIS_URL` | `${{Redis.REDIS_URL}}` |
-| `PORT` | `3001` |
-| `JWT_SECRET` | Generated secret from `openssl rand -base64 32`. |
-| `FRONTEND_URL` | Public frontend domain. |
-| `SHORT_LINK_BASE_URL` | Public frontend domain. |
-| `MOCKPASS_ISSUER` | Public MockPass domain plus `/singpass/v3/fapi`. |
-| `MOCKPASS_CLIENT_ID` | `my-client-id` for the bundled MockPass setup. |
+| Variable                | Value                                             |
+| ----------------------- | ------------------------------------------------- |
+| `DATABASE_URL`          | `${{Postgres.DATABASE_URL}}`                      |
+| `REDIS_URL`             | `${{Redis.REDIS_URL}}`                            |
+| `PORT`                  | `3001`                                            |
+| `JWT_SECRET`            | Generated secret from `openssl rand -base64 32`.  |
+| `FRONTEND_URL`          | Public frontend domain.                           |
+| `SHORT_LINK_BASE_URL`   | Public frontend domain.                           |
+| `MOCKPASS_ISSUER`       | Public MockPass domain plus `/singpass/v3/fapi`.  |
+| `MOCKPASS_CLIENT_ID`    | `my-client-id` for the bundled MockPass setup.    |
 | `MOCKPASS_REDIRECT_URI` | Public frontend domain plus `/api/auth/callback`. |
 
 ```bash
@@ -100,8 +100,8 @@ railway variable set MOCKPASS_REDIRECT_URI="$FRONTEND_URL/api/auth/callback" --s
 
 Frontend variables:
 
-| Variable | Value |
-| --- | --- |
+| Variable      | Value                                             |
+| ------------- | ------------------------------------------------- |
 | `BACKEND_URL` | `http://${{backend.RAILWAY_PRIVATE_DOMAIN}}:3001` |
 
 ```bash
@@ -112,10 +112,10 @@ railway variable set BACKEND_URL='http://${{backend.RAILWAY_PRIVATE_DOMAIN}}:300
 
 MockPass variables:
 
-| Variable | Value |
-| --- | --- |
-| `PORT` | `5156` |
-| `SHOW_LOGIN_PAGE` | `true` |
+| Variable                    | Value                                                                   |
+| --------------------------- | ----------------------------------------------------------------------- |
+| `PORT`                      | `5156`                                                                  |
+| `SHOW_LOGIN_PAGE`           | `true`                                                                  |
 | `FAPI_CLIENT_JWKS_ENDPOINT` | `http://${{backend.RAILWAY_PRIVATE_DOMAIN}}:3001/.well-known/jwks.json` |
 
 ```bash

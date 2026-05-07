@@ -1,4 +1,4 @@
-FROM node:22-alpine
+FROM node:24-alpine
 RUN npm install -g @opengovsg/mockpass
 EXPOSE 5156
 CMD ["mockpass"]

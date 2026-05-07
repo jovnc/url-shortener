@@ -17,20 +17,20 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: "24"
           cache: "pnpm"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Generate Prisma client
-        run: pnpm --filter ./apps/backend run db:generate
+        run: pnpm be run db:generate
 
       - name: Lint backend
-        run: pnpm --filter ./apps/backend run lint
+        run: pnpm be run lint
 
       - name: Lint frontend
-        run: pnpm --filter ./apps/frontend run lint
+        run: pnpm fe run lint
 
   typecheck:
     name: Typecheck
@@ -44,20 +44,20 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: "24"
           cache: "pnpm"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Generate Prisma client
-        run: pnpm --filter ./apps/backend run db:generate
+        run: pnpm be run db:generate
 
       - name: Typecheck backend
-        run: pnpm --filter ./apps/backend run typecheck
+        run: pnpm be run typecheck
 
       - name: Typecheck frontend
-        run: pnpm --filter ./apps/frontend run typecheck
+        run: pnpm fe run typecheck
 
   test:
     name: Test
@@ -71,14 +71,14 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: "24"
           cache: "pnpm"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Generate Prisma client
-        run: pnpm --filter ./apps/backend run db:generate
+        run: pnpm be run db:generate
 
       - name: Run backend tests
-        run: pnpm --filter ./apps/backend run test
+        run: pnpm be run test

@@ -5,7 +5,7 @@ const root = path.dirname(fileURLToPath(import.meta.url));
 
 export default {
   // Prettier runs from root on all staged TS/TSX files
-  "**/*.{ts,tsx}": "prettier --write",
+  "**/*.{ts,tsx}": "pnpm exec prettier --write",
 
   // ESLint runs from each app's directory so its config + node_modules resolve correctly
   "apps/backend/**/*.ts": (files) => {
