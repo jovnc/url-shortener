@@ -7,7 +7,7 @@ import { appConfig } from './app.config.js';
 import { LinksModule } from './links/links.module.js';
 import { RedisModule } from './common/redis/redis.module.js';
 import { RateLimiterGuard } from './common/guards/rate-limiter.guard.js';
-import { HealthController } from './health.controller.js';
+import { HealthModule } from './health/health.module.js';
 
 @Module({
   imports: [
@@ -16,8 +16,9 @@ import { HealthController } from './health.controller.js';
     RedisModule,
     AuthModule,
     LinksModule,
+    HealthModule,
   ],
-  controllers: [HealthController],
+  controllers: [],
   providers: [
     {
       provide: APP_GUARD,
