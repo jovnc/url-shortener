@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createClient, type RedisClientType } from 'redis';
-import type { AppConfig } from '../app.config.js';
+import type { AppConfig } from '../../app.config.js';
 
 @Injectable()
 export class RedisService implements OnModuleInit, OnModuleDestroy {
@@ -77,6 +77,10 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
 
   async incr(key: string): Promise<number> {
     return this.client.incr(key);
+  }
+
+  async expire(key: string, seconds: number): Promise<void> {
+    await this.client.expire(key, seconds);
   }
 
   async ping(): Promise<void> {

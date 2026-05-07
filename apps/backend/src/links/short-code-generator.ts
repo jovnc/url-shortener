@@ -1,6 +1,6 @@
 import { Injectable, ServiceUnavailableException } from '@nestjs/common';
-import { PrismaService } from '../database/prisma.service.js';
-import { RedisService } from '../redis/redis.service.js';
+import { PrismaService } from '../common/database/prisma.service.js';
+import { RedisService } from '../common/redis/redis.service.js';
 
 const BASE62_ALPHABET =
   'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';

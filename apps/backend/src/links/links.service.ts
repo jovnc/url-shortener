@@ -7,8 +7,8 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { PrismaService } from '../database/prisma.service.js';
-import { RedisService } from '../redis/redis.service.js';
+import { PrismaService } from '../common/database/prisma.service.js';
+import { RedisService } from '../common/redis/redis.service.js';
 import type { AppConfig } from '../app.config.js';
 import { ShortCodeGenerator } from './short-code-generator.js';
 

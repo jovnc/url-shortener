@@ -18,7 +18,7 @@ import {
   PrivateKeyJwt,
   type Configuration,
 } from 'openid-client';
-import { PrismaService } from '../database/prisma.service.js';
+import { PrismaService } from '../common/database/prisma.service.js';
 
 const DPOP_EXPIRY_SECONDS = 120;
 
