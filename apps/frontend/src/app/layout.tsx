@@ -22,8 +22,8 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "URL Shortener",
-  description: "Create and manage short links",
+  title: "Singpass-Verified URL Shortener",
+  description: "Create and manage short links using Singpass",
 };
 
 export default function RootLayout({
