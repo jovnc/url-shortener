@@ -11,7 +11,7 @@ The backend listens on IPv6 host `::`, which is required for Railway private DNS
 - Public short-link routes are handled by the frontend and resolved through the backend redirect endpoint.
 - The backend talks to PostgreSQL for persisted users and links.
 - The backend talks to Redis for redirect cache entries and the short-code counter.
-- MockPass must be able to read the backend JWKS endpoint at `/.well-known/jwks.json`.
+- MockPass reads the JWKS endpoint at `/.well-known/jwks.json` through the public frontend URL.
 
 ## 1. Create Services
 
@@ -116,12 +116,12 @@ MockPass variables:
 | --------------------------- | ----------------------------------------------------------------------- |
 | `PORT`                      | `5156`                                                                  |
 | `SHOW_LOGIN_PAGE`           | `true`                                                                  |
-| `FAPI_CLIENT_JWKS_ENDPOINT` | `http://${{backend.RAILWAY_PRIVATE_DOMAIN}}:3001/.well-known/jwks.json` |
+| `FAPI_CLIENT_JWKS_ENDPOINT` | `$FRONTEND_URL/.well-known/jwks.json`                                   |
 
 ```bash
 railway variable set PORT=5156 --service mockpass
 railway variable set SHOW_LOGIN_PAGE=true --service mockpass
-railway variable set FAPI_CLIENT_JWKS_ENDPOINT='http://${{backend.RAILWAY_PRIVATE_DOMAIN}}:3001/.well-known/jwks.json' --service mockpass
+railway variable set FAPI_CLIENT_JWKS_ENDPOINT="$FRONTEND_URL/.well-known/jwks.json" --service mockpass
 ```
 
 ## 5. Deploy

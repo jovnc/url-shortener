@@ -34,7 +34,7 @@ services:
     environment:
       PORT: 5156
       SHOW_LOGIN_PAGE: "true"
-      FAPI_CLIENT_JWKS_ENDPOINT: "http://host.docker.internal:3001/.well-known/jwks.json"
+      FAPI_CLIENT_JWKS_ENDPOINT: "http://host.docker.internal:3000/.well-known/jwks.json"
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
