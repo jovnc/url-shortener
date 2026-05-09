@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { backendUrl } from "@/lib/backend";
 
-const SHORT_CODE_PATTERN = /^[0-9a-zA-Z]+$/;
+const SHORT_CODE_PATTERN = /^[0-9a-zA-Z-]+$/;
 
 export async function GET(
   _request: NextRequest,
