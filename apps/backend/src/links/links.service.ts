@@ -8,9 +8,12 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../common/database/prisma.service.js';
-import { RedisService } from '../common/redis/redis.service.js';
 import type { AppConfig } from '../app.config.js';
-import { ShortCodeGenerator } from './short-code-generator.js';
+import { ShortCodeGenerator } from './short-code/short-code-generator.js';
+import {
+  RedirectCache,
+  type RedirectCachePayload,
+} from './redirect-cache/redirect-cache.js';
 
 const SHORT_CODE_PATTERN = /^[0-9a-zA-Z-]+$/;
 const RESERVED_CODES = new Set([
@@ -22,20 +25,12 @@ const RESERVED_CODES = new Set([
   'logout',
   'me',
 ]);
-const REDIRECT_CACHE_PREFIX = 'links:redirect:';
-const REDIRECT_CACHE_TTL_SECONDS = 15 * 60;
-
-interface RedirectCachePayload {
-  originalUrl: string;
-  isActive: boolean;
-  expiresAt: string | null;
-}
 
 @Injectable()
 export class LinksService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly redisService: RedisService,
+    private readonly redirectCache: RedirectCache,
     private readonly configService: ConfigService,
     private readonly shortCodeGenerator: ShortCodeGenerator,
   ) {}
@@ -92,7 +87,7 @@ export class LinksService {
         },
       });
 
-      await this.cacheRedirectPayload(shortCode, {
+      await this.redirectCache.set(shortCode, {
         originalUrl: link.originalUrl,
         isActive: link.isActive,
         expiresAt: link.expiresAt?.toISOString() ?? null,
@@ -130,13 +125,13 @@ export class LinksService {
       });
     }
 
-    await this.redisService.del(this.getRedirectCacheKey(link.shortCode));
+    await this.redirectCache.del(link.shortCode);
   }
 
   async resolveRedirect(shortCode: string) {
     if (!SHORT_CODE_PATTERN.test(shortCode)) throw new NotFoundException();
 
-    const cached = await this.getCachedRedirectPayload(shortCode);
+    const cached = await this.redirectCache.get(shortCode);
     if (cached) return this.resolvePayload(cached);
 
     const link = await this.prisma.link.findUnique({
@@ -150,51 +145,14 @@ export class LinksService {
 
     if (!link) throw new NotFoundException();
 
-    const payload = {
+    const payload: RedirectCachePayload = {
       originalUrl: link.originalUrl,
       isActive: link.isActive,
       expiresAt: link.expiresAt?.toISOString() ?? null,
     };
 
-    await this.cacheRedirectPayload(shortCode, payload);
+    await this.redirectCache.set(shortCode, payload);
     return this.resolvePayload(payload);
-  }
-
-  private async getCachedRedirectPayload(
-    shortCode: string,
-  ): Promise<RedirectCachePayload | null> {
-    const cached = await this.redisService.get(
-      this.getRedirectCacheKey(shortCode),
-    );
-    if (!cached) return null;
-    try {
-      return JSON.parse(cached) as RedirectCachePayload;
-    } catch {
-      return null;
-    }
-  }
-
-  private async cacheRedirectPayload(
-    shortCode: string,
-    payload: RedirectCachePayload,
-  ) {
-    const ttlSeconds = this.getCacheTtlSeconds(payload.expiresAt);
-    if (ttlSeconds <= 0) return;
-
-    await this.redisService.set(
-      this.getRedirectCacheKey(shortCode),
-      JSON.stringify(payload),
-      ttlSeconds,
-    );
-  }
-
-  private getCacheTtlSeconds(expiresAt: string | null) {
-    if (!expiresAt) return REDIRECT_CACHE_TTL_SECONDS;
-
-    const secondsUntilExpiry = Math.floor(
-      (new Date(expiresAt).getTime() - Date.now()) / 1000,
-    );
-    return Math.min(REDIRECT_CACHE_TTL_SECONDS, secondsUntilExpiry);
   }
 
   private resolvePayload(payload: RedirectCachePayload) {
@@ -206,10 +164,6 @@ export class LinksService {
       throw new GoneException();
     }
     return payload.originalUrl;
-  }
-
-  private getRedirectCacheKey(shortCode: string) {
-    return `${REDIRECT_CACHE_PREFIX}${shortCode}`;
   }
 
   private buildShortUrl(shortCode: string) {

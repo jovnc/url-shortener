@@ -9,16 +9,12 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { CookieOptions, Request, Response } from 'express';
-import { AuthService } from './auth.service.js';
-import { JwtGuard } from './jwt.guard.js';
+import { OidcService } from './oidc/oidc.service.js';
+import { SessionService } from './session/session.service.js';
+import { JwtGuard, type SessionPayload } from './session/jwt.guard.js';
 import type { AppConfig } from '../app.config.js';
 
-interface AuthenticatedRequest extends Request {
-  user: {
-    sub: string;
-    singpassSub: string;
-  };
-}
+type AuthenticatedRequest = Request & { user: SessionPayload };
 
 const OIDC_COOKIES = [
   'oidc_state',
@@ -34,15 +30,15 @@ const SESSION_COOKIE_MAX_AGE = 86_400_000;
 @Controller('auth')
 export class AuthController {
   constructor(
-    private readonly authService: AuthService,
+    private readonly oidcService: OidcService,
+    private readonly sessionService: SessionService,
     private readonly configService: ConfigService,
   ) {}
 
   @Get('login')
   async login(@Res() res: Response) {
-    // Use PAR for Mockpass FAPI 2.0 auth flow
     const { url, state, nonce, codeVerifier, dpopKeys } =
-      await this.authService.buildLoginUrl();
+      await this.oidcService.buildLoginUrl();
 
     this.clearAuthCookies(res);
 
@@ -81,13 +77,15 @@ export class AuthController {
       req.query as Record<string, string>,
     ).toString();
 
-    const { sessionToken } = await this.authService.handleCallback(
+    const claim = await this.oidcService.handleCallback(
       redirectBase.toString(),
       codeVerifier,
       expectedState,
       expectedNonce,
       dpopKeys,
     );
+
+    const { sessionToken } = await this.sessionService.createSession(claim);
 
     this.clearAuthCookies(res);
     res.cookie(
@@ -111,7 +109,7 @@ export class AuthController {
   @Get('me')
   @UseGuards(JwtGuard)
   async me(@Req() req: AuthenticatedRequest) {
-    return this.authService.findUserById(req.user.sub);
+    return this.sessionService.findUserById(req.user.sub);
   }
 
   private authCookieOptions(maxAge: number): CookieOptions {

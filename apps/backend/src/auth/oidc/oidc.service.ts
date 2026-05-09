@@ -1,7 +1,6 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { JwtService } from '@nestjs/jwt';
-import type { AppConfig } from '../app.config.js';
+import type { AppConfig } from '../../app.config.js';
 import { generateKeyPair, exportJWK, importJWK, type JWK } from 'jose';
 import {
   discovery,
@@ -18,28 +17,22 @@ import {
   PrivateKeyJwt,
   type Configuration,
 } from 'openid-client';
-import { PrismaService } from '../common/database/prisma.service.js';
+
+export interface IdentityClaim {
+  sub: string;
+  name: string | null;
+}
 
 const DPOP_EXPIRY_SECONDS = 120;
 
 @Injectable()
-export class AuthService implements OnModuleInit {
-  private signingKeyPair!: {
-    publicKey: CryptoKey;
-    privateKey: CryptoKey;
-  };
-  private encKeyPair!: {
-    publicKey: CryptoKey;
-    privateKey: CryptoKey;
-  };
+export class OidcService implements OnModuleInit {
+  private signingKeyPair!: { publicKey: CryptoKey; privateKey: CryptoKey };
+  private encKeyPair!: { publicKey: CryptoKey; privateKey: CryptoKey };
   private jwks!: object;
   private oidcConfig?: Configuration;
 
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly jwtService: JwtService,
-    private readonly configService: ConfigService,
-  ) {}
+  constructor(private readonly configService: ConfigService) {}
 
   async onModuleInit() {
     const [sigPair, encPair] = await Promise.all([
@@ -96,13 +89,7 @@ export class AuthService implements OnModuleInit {
       dpopOptions,
     );
 
-    return {
-      url: url.toString(),
-      state,
-      nonce,
-      codeVerifier,
-      dpopKeys,
-    };
+    return { url: url.toString(), state, nonce, codeVerifier, dpopKeys };
   }
 
   async handleCallback(
@@ -111,7 +98,7 @@ export class AuthService implements OnModuleInit {
     expectedState: string,
     expectedNonce: string,
     dpopKeys: { privateJwk: JWK; publicJwk: JWK },
-  ) {
+  ): Promise<IdentityClaim> {
     const oidcConfig = await this.getOidcConfig();
     const dpopOptions = await this.getDpopOptions(dpopKeys);
 
@@ -130,24 +117,10 @@ export class AuthService implements OnModuleInit {
 
     const claims = tokens.claims()!;
     const subAttrs = claims['sub_attributes'] as { name?: string } | undefined;
-    const name = subAttrs?.name ?? null;
-
-    const user = await this.prisma.user.upsert({
-      where: { sub: claims.sub },
-      update: { name },
-      create: { sub: claims.sub, name },
-    });
-
-    const sessionToken = await this.jwtService.signAsync({
-      sub: user.id,
-      singpassSub: claims.sub,
-    });
-
-    return { user, sessionToken };
-  }
-
-  findUserById(id: string) {
-    return this.prisma.user.findUnique({ where: { id } });
+    return {
+      sub: claims.sub,
+      name: subAttrs?.name ?? null,
+    };
   }
 
   private async createDpopKeyPair() {

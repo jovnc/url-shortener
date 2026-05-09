@@ -13,16 +13,13 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
-import { JwtGuard } from '../auth/jwt.guard.js';
+import { JwtGuard, type SessionPayload } from '../auth/session/jwt.guard.js';
 import { CreateLinkDto } from './dto/create-link.dto.js';
 import { LinksService } from './links.service.js';
 
-interface AuthenticatedRequest extends Request {
-  user: {
-    sub: string;
-    singpassSub: string;
-  };
-}
+type AuthenticatedRequest = Request & {
+  user: SessionPayload;
+};
 
 @Controller('links')
 export class LinksController {

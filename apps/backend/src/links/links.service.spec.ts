@@ -1,81 +1,71 @@
-/* eslint-disable @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/unbound-method */
 import {
   BadRequestException,
   ConflictException,
   GoneException,
 } from '@nestjs/common';
 import { describe, expect, it } from 'vitest';
-import { mock, mockDeep } from 'vitest-mock-extended';
+import { mock } from 'vitest-mock-extended';
+import {
+  createConfigMock,
+  createPrismaMock,
+} from '../common/test-utils/mocks.js';
 import { LinksService } from './links.service.js';
+import type { ShortCodeGenerator } from './short-code/short-code-generator.js';
+import type { RedirectCache } from './redirect-cache/redirect-cache.js';
 
-interface PrismaMock {
-  link: {
-    findMany(args: unknown): Promise<unknown[]>;
-    create(args: unknown): Promise<any>;
-    findFirst(args: unknown): Promise<any>;
-    update(args: unknown): Promise<any>;
-    findUnique(args: unknown): Promise<any>;
-  };
-}
-
-interface RedisMock {
-  get(key: string): Promise<string | null>;
-  set(key: string, value: string, ttlSeconds?: number): Promise<void>;
-  del(key: string): Promise<void>;
-}
-
-interface ConfigMock {
-  getOrThrow(key: string): { shortLinkBaseUrl: string };
-}
-
-interface ShortCodeGeneratorMock {
-  next(): Promise<string>;
-}
+const createRedirectCacheMock = () => mock<RedirectCache>();
+const createShortCodeGeneratorMock = () => mock<ShortCodeGenerator>();
 
 describe('LinksService', () => {
+  // Helper function to create a service instance with mocked dependencies
   const createService = () => {
-    const prisma = mockDeep<PrismaMock>();
-    const redis = mock<RedisMock>();
-    const config = mock<ConfigMock>();
-    const shortCodeGenerator = mock<ShortCodeGeneratorMock>();
+    const prisma = createPrismaMock();
+    const redirectCache = createRedirectCacheMock();
+    const config = createConfigMock();
+    const shortCodeGenerator = createShortCodeGeneratorMock();
     config.getOrThrow.mockReturnValue({ shortLinkBaseUrl: 'https://sho.rt' });
 
     return {
       prisma,
-      redis,
+      redirectCache,
       config,
       shortCodeGenerator,
       service: new LinksService(
-        prisma as any,
-        redis as any,
-        config as any,
-        shortCodeGenerator as any,
+        prisma,
+        redirectCache,
+        config,
+        shortCodeGenerator,
       ),
     };
   };
 
   it('creates a generated short link and caches its redirect payload', async () => {
-    const { service, prisma, redis, shortCodeGenerator } = createService();
+    const { service, prisma, redirectCache, shortCodeGenerator } =
+      createService();
     const createdAt = new Date('2026-01-01T00:00:00.000Z');
     shortCodeGenerator.next.mockResolvedValue('abc123');
     prisma.link.create.mockResolvedValue({
       id: 'link-id',
+      userId: 'user-id',
       shortCode: 'abc123',
       originalUrl: 'https://example.com',
       isActive: true,
       expiresAt: null,
       createdAt,
+      updatedAt: createdAt,
     });
 
     await expect(
       service.create('user-id', 'https://example.com'),
     ).resolves.toEqual({
       id: 'link-id',
+      userId: 'user-id',
       shortCode: 'abc123',
       originalUrl: 'https://example.com',
       isActive: true,
       expiresAt: null,
       createdAt,
+      updatedAt: createdAt,
       shortUrl: 'https://sho.rt/abc123',
     });
 
@@ -90,15 +80,11 @@ describe('LinksService', () => {
         }),
       }),
     );
-    expect(redis.set).toHaveBeenCalledWith(
-      'links:redirect:abc123',
-      JSON.stringify({
-        originalUrl: 'https://example.com',
-        isActive: true,
-        expiresAt: null,
-      }),
-      900,
-    );
+    expect(redirectCache.set).toHaveBeenCalledWith('abc123', {
+      originalUrl: 'https://example.com',
+      isActive: true,
+      expiresAt: null,
+    });
   });
 
   it('rejects reserved custom short codes', async () => {
@@ -122,14 +108,12 @@ describe('LinksService', () => {
   });
 
   it('resolves active cached redirects without querying Prisma', async () => {
-    const { service, prisma, redis } = createService();
-    redis.get.mockResolvedValue(
-      JSON.stringify({
-        originalUrl: 'https://example.com',
-        isActive: true,
-        expiresAt: null,
-      }),
-    );
+    const { service, prisma, redirectCache } = createService();
+    redirectCache.get.mockResolvedValue({
+      originalUrl: 'https://example.com',
+      isActive: true,
+      expiresAt: null,
+    });
 
     await expect(service.resolveRedirect('abc123')).resolves.toBe(
       'https://example.com',
@@ -139,26 +123,22 @@ describe('LinksService', () => {
   });
 
   it('rejects inactive or expired redirects', async () => {
-    const { service, redis } = createService();
-    redis.get.mockResolvedValue(
-      JSON.stringify({
-        originalUrl: 'https://example.com',
-        isActive: false,
-        expiresAt: null,
-      }),
-    );
+    const { service, redirectCache } = createService();
+    redirectCache.get.mockResolvedValue({
+      originalUrl: 'https://example.com',
+      isActive: false,
+      expiresAt: null,
+    });
 
     await expect(service.resolveRedirect('abc123')).rejects.toBeInstanceOf(
       GoneException,
     );
 
-    redis.get.mockResolvedValue(
-      JSON.stringify({
-        originalUrl: 'https://example.com',
-        isActive: true,
-        expiresAt: '2020-01-01T00:00:00.000Z',
-      }),
-    );
+    redirectCache.get.mockResolvedValue({
+      originalUrl: 'https://example.com',
+      isActive: true,
+      expiresAt: '2020-01-01T00:00:00.000Z',
+    });
 
     await expect(service.resolveRedirect('abc123')).rejects.toBeInstanceOf(
       GoneException,
@@ -166,11 +146,17 @@ describe('LinksService', () => {
   });
 
   it('deactivates an active link and clears its redirect cache on delete', async () => {
-    const { service, prisma, redis } = createService();
+    const { service, prisma, redirectCache } = createService();
+    const now = new Date();
     prisma.link.findFirst.mockResolvedValue({
       id: 'link-id',
+      userId: 'user-id',
       shortCode: 'abc123',
+      originalUrl: 'https://example.com',
       isActive: true,
+      expiresAt: null,
+      createdAt: now,
+      updatedAt: now,
     });
 
     await expect(service.delete('user-id', 'link-id')).resolves.toBeUndefined();
@@ -179,6 +165,6 @@ describe('LinksService', () => {
       where: { id: 'link-id' },
       data: { isActive: false },
     });
-    expect(redis.del).toHaveBeenCalledWith('links:redirect:abc123');
+    expect(redirectCache.del).toHaveBeenCalledWith('abc123');
   });
 });
