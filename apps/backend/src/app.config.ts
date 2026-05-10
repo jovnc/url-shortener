@@ -2,6 +2,7 @@ import { registerAs } from '@nestjs/config';
 
 const REQUIRED_ENV_VARS = [
   'JWT_SECRET',
+  'CSRF_SECRET',
   'DATABASE_URL',
   'REDIS_URL',
   'MOCKPASS_ISSUER',
@@ -22,6 +23,7 @@ export const appConfig = registerAs('app', () => {
       process.env.FRONTEND_URL ??
       'http://localhost:3000',
     jwtSecret: process.env.JWT_SECRET!,
+    csrfSecret: process.env.CSRF_SECRET!,
     databaseUrl: process.env.DATABASE_URL!,
     redisUrl: process.env.REDIS_URL!,
     mockpass: {

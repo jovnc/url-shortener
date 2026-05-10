@@ -46,8 +46,10 @@ export async function proxyBackend(
   const headers = new Headers();
   const cookie = request.headers.get("cookie");
   const contentType = request.headers.get("content-type");
+  const csrfToken = request.headers.get("x-csrf-token");
   if (cookie) headers.set("Cookie", cookie);
   if (contentType) headers.set("Content-Type", contentType);
+  if (csrfToken) headers.set("X-CSRF-TOKEN", csrfToken);
 
   const response = await fetch(backendUrl(path), {
     method: init.method ?? request.method,

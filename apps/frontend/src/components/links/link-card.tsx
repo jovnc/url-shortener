@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Check, Copy, ExternalLink, QrCode, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { readError } from "@/lib/api";
+import { useCsrfFetch } from "@/lib/csrf";
 import { QRBlock } from "@/components/qr-block";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -51,6 +52,7 @@ function shortHost(url: string): string {
 }
 
 export function LinkCard({ link, isNew, onDisable }: LinkCardProps) {
+  const csrfFetch = useCsrfFetch();
   const [copied, setCopied] = useState(false);
   const [qrOpen, setQrOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -79,9 +81,8 @@ export function LinkCard({ link, isNew, onDisable }: LinkCardProps) {
 
   async function handleDisable() {
     try {
-      const response = await fetch(`/api/links/${link.id}`, {
+      const response = await csrfFetch(`/api/links/${link.id}`, {
         method: "DELETE",
-        credentials: "include",
       });
       if (!response.ok) throw new Error(await readError(response));
       onDisable(link.id);

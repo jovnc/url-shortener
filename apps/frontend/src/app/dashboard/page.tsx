@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { readError } from "@/lib/api";
+import { CsrfProvider } from "@/lib/csrf";
 import { Topbar } from "@/components/topbar";
 import { CreateLinkForm } from "@/components/links/create-link-form";
 import { LinkList } from "@/components/links/link-list";
@@ -24,6 +25,7 @@ function LoadingShell() {
 export default function DashboardPage() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
+  const [csrfToken, setCsrfToken] = useState("");
   const [links, setLinks] = useState<Link[]>([]);
   const [newLinkId, setNewLinkId] = useState<string | undefined>();
   const [loading, setLoading] = useState(true);
@@ -40,8 +42,13 @@ export default function DashboardPage() {
           return;
         }
 
-        currentUser = (await meRes.json()) as User;
+        const { csrfToken: token, ...userData } =
+          (await meRes.json()) as User & {
+            csrfToken: string;
+          };
+        currentUser = userData;
         setUser(currentUser);
+        setCsrfToken(token);
 
         const linksRes = await fetch("/api/links", { credentials: "include" });
         if (!linksRes.ok) throw new Error(await readError(linksRes));
@@ -61,35 +68,41 @@ export default function DashboardPage() {
   }, [router]);
 
   async function logout() {
-    await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+    await fetch("/api/auth/logout", {
+      method: "POST",
+      credentials: "include",
+      headers: { "X-CSRF-TOKEN": csrfToken },
+    });
     router.replace("/");
   }
 
   if (loading || !user) return <LoadingShell />;
 
   return (
-    <div className="min-h-screen bg-surface">
-      <Topbar user={user} onLogout={() => void logout()} />
-      <div className={pageShell}>
-        {error && <p className="mb-4 text-sm text-brand-dark">{error}</p>}
-        <CreateLinkForm
-          onCreated={(link) => {
-            setLinks((current) => [link, ...current]);
-            setNewLinkId(link.id);
-          }}
-        />
-        <LinkList
-          links={links}
-          newLinkId={newLinkId}
-          onDisable={(id) =>
-            setLinks((current) =>
-              current.map((link) =>
-                link.id === id ? { ...link, isActive: false } : link,
-              ),
-            )
-          }
-        />
+    <CsrfProvider token={csrfToken}>
+      <div className="min-h-screen bg-surface">
+        <Topbar user={user} onLogout={() => void logout()} />
+        <div className={pageShell}>
+          {error && <p className="mb-4 text-sm text-brand-dark">{error}</p>}
+          <CreateLinkForm
+            onCreated={(link) => {
+              setLinks((current) => [link, ...current]);
+              setNewLinkId(link.id);
+            }}
+          />
+          <LinkList
+            links={links}
+            newLinkId={newLinkId}
+            onDisable={(id) =>
+              setLinks((current) =>
+                current.map((link) =>
+                  link.id === id ? { ...link, isActive: false } : link,
+                ),
+              )
+            }
+          />
+        </div>
       </div>
-    </div>
+    </CsrfProvider>
   );
 }

@@ -12,6 +12,7 @@ import type { CookieOptions, Request, Response } from 'express';
 import { OidcService } from './oidc/oidc.service.js';
 import { SessionService } from './session/session.service.js';
 import { JwtGuard, type SessionPayload } from './session/jwt.guard.js';
+import { CsrfService } from '../common/csrf/csrf.service.js';
 import type { AppConfig } from '../app.config.js';
 
 type AuthenticatedRequest = Request & { user: SessionPayload };
@@ -33,6 +34,7 @@ export class AuthController {
     private readonly oidcService: OidcService,
     private readonly sessionService: SessionService,
     private readonly configService: ConfigService,
+    private readonly csrfService: CsrfService,
   ) {}
 
   @Get('login')
@@ -103,34 +105,62 @@ export class AuthController {
   }
 
   @Post('logout')
+  @UseGuards(JwtGuard)
   logout(@Res() res: Response) {
-    COOKIE_PATHS.forEach((path) => res.clearCookie('session', { path }));
+    const { frontendUrl } = this.configService.getOrThrow<AppConfig>('app');
+    const secure = new URL(frontendUrl).protocol === 'https:';
+    const base = {
+      httpOnly: true,
+      secure,
+      sameSite: secure ? 'none' : 'lax',
+    } as const;
+    COOKIE_PATHS.forEach((path) =>
+      res.clearCookie('session', { ...base, path }),
+    );
+    res.clearCookie(this.csrfCookieName(secure), { ...base, path: '/' });
     res.sendStatus(200);
   }
 
   @Get('me')
   @UseGuards(JwtGuard)
-  async me(@Req() req: AuthenticatedRequest) {
-    return this.sessionService.findUserById(req.user.sub);
+  async me(
+    @Req() req: AuthenticatedRequest,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const user = await this.sessionService.findUserById(req.user.sub);
+    return { ...user, csrfToken: this.csrfService.generateToken(req, res) };
   }
 
   private authCookieOptions(maxAge: number): CookieOptions {
     const { frontendUrl } = this.configService.getOrThrow<AppConfig>('app');
     const secure = new URL(frontendUrl).protocol === 'https:';
-
     return {
       httpOnly: true,
-      sameSite: secure ? 'none' : 'lax',
       secure,
+      sameSite: secure ? 'none' : 'lax',
       path: '/',
       maxAge,
     };
   }
 
   private clearAuthCookies(res: Response) {
+    const { frontendUrl } = this.configService.getOrThrow<AppConfig>('app');
+    const secure = new URL(frontendUrl).protocol === 'https:';
+    const base = {
+      httpOnly: true,
+      secure,
+      sameSite: secure ? 'none' : 'lax',
+    } as const;
     OIDC_COOKIES.forEach((name) =>
-      COOKIE_PATHS.forEach((path) => res.clearCookie(name, { path })),
+      COOKIE_PATHS.forEach((path) => res.clearCookie(name, { ...base, path })),
     );
-    COOKIE_PATHS.forEach((path) => res.clearCookie('session', { path }));
+    COOKIE_PATHS.forEach((path) =>
+      res.clearCookie('session', { ...base, path }),
+    );
+    res.clearCookie(this.csrfCookieName(secure), { ...base, path: '/' });
+  }
+
+  private csrfCookieName(secure: boolean) {
+    return secure ? '__Host-psifi.x-csrf-token' : 'psifi.x-csrf-token';
   }
 }

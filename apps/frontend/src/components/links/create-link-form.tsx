@@ -4,6 +4,7 @@ import { FormEvent, useState } from "react";
 import { ArrowRight, Link2 } from "lucide-react";
 import { toast } from "sonner";
 import { readError } from "@/lib/api";
+import { useCsrfFetch } from "@/lib/csrf";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -36,6 +37,7 @@ interface CreateLinkFormProps {
 }
 
 export function CreateLinkForm({ onCreated }: CreateLinkFormProps) {
+  const csrfFetch = useCsrfFetch();
   const [url, setUrl] = useState("");
   const [expiry, setExpiry] = useState<ExpiryPreset>("never");
   const [customCode, setCustomCode] = useState("");
@@ -54,9 +56,8 @@ export function CreateLinkForm({ onCreated }: CreateLinkFormProps) {
 
     try {
       const expiresAt = expiryToDate(expiry);
-      const response = await fetch("/api/links", {
+      const response = await csrfFetch("/api/links", {
         method: "POST",
-        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           originalUrl: url,

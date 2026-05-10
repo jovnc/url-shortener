@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
 import { DatabaseModule } from './common/database/database.module.js';
@@ -7,7 +7,9 @@ import { appConfig } from './app.config.js';
 import { LinksModule } from './links/links.module.js';
 import { RedisModule } from './common/redis/redis.module.js';
 import { RateLimiterGuard } from './common/guards/rate-limiter.guard.js';
+import { CsrfModule } from './common/csrf/csrf.module.js';
 import { HealthModule } from './health/health.module.js';
+import { RequestIdMiddleware } from './common/middleware/request-id.middleware.js';
 
 @Module({
   imports: [
@@ -17,6 +19,7 @@ import { HealthModule } from './health/health.module.js';
     AuthModule,
     LinksModule,
     HealthModule,
+    CsrfModule,
   ],
   controllers: [],
   providers: [
@@ -26,4 +29,8 @@ import { HealthModule } from './health/health.module.js';
     },
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(RequestIdMiddleware).forRoutes('*path');
+  }
+}
