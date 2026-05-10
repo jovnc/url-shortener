@@ -106,7 +106,8 @@ export class AuthController {
 
   @Post('logout')
   @UseGuards(JwtGuard)
-  logout(@Res() res: Response) {
+  async logout(@Req() req: Request, @Res() res: Response) {
+    await this.sessionService.blacklistToken(req.cookies.session as string);
     const { frontendUrl } = this.configService.getOrThrow<AppConfig>('app');
     const secure = new URL(frontendUrl).protocol === 'https:';
     const base = {
