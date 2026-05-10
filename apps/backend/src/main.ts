@@ -41,7 +41,9 @@ async function bootstrap() {
   // Refer to https://docs.nestjs.com/security/rate-limiting#proxies
   app.set('trust proxy', 'loopback');
 
+  // Required for cookie parsing since we use cookies for OIDC session management
   app.use(cookieParser());
+
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
 
   await app.listen(port, '::');

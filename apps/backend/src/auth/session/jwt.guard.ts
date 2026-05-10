@@ -12,8 +12,7 @@ export interface SessionPayload {
   singpassSub: string;
 }
 
-interface SessionRequest extends Omit<Request, 'cookies'> {
-  cookies: Record<string, unknown>;
+interface SessionRequest extends Request {
   user?: SessionPayload;
 }
 
@@ -23,7 +22,7 @@ export class JwtGuard implements CanActivate {
 
   canActivate(context: ExecutionContext): boolean {
     const req = context.switchToHttp().getRequest<SessionRequest>();
-    const token = req.cookies?.['session'];
+    const token = req.cookies?.session as string | undefined;
     if (typeof token !== 'string') throw new UnauthorizedException();
     try {
       req.user = this.jwtService.verify<SessionPayload>(token);

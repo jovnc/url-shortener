@@ -10,6 +10,7 @@ import { RedisService } from '../redis/redis.service.js';
 
 const LIMIT = 100;
 const WINDOW_SECONDS = 60;
+const CACHE_KEY_PREFIX = 'limit:';
 
 /**
  * A simple rate limiter guard that limits requests based on the client's IP address.
@@ -25,7 +26,7 @@ export class RateLimiterGuard implements CanActivate {
     const req = context.switchToHttp().getRequest<Request>();
     const res = context.switchToHttp().getResponse<Response>();
     const ip = req.ips.length ? req.ips[0] : req.ip;
-    const key = `limit:${ip}`;
+    const key = `${CACHE_KEY_PREFIX}${ip}`;
 
     const hits = await this.redis.incr(key);
     if (hits === 1) {

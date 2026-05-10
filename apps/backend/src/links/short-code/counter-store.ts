@@ -6,7 +6,7 @@ import {
 import { PrismaService } from '../../common/database/prisma.service.js';
 import { RedisService } from '../../common/redis/redis.service.js';
 
-const COUNTER_KEY = 'links:counter';
+const CACHE_COUNTER_KEY = 'links:counter';
 const COUNTER_SEED = 62 ** 5 - 1;
 
 export abstract class CounterStore {
@@ -23,7 +23,7 @@ export class RedisCounterStore extends CounterStore implements OnModuleInit {
   }
 
   async onModuleInit() {
-    const exists = await this.redis.exists(COUNTER_KEY);
+    const exists = await this.redis.exists(CACHE_COUNTER_KEY);
     if (!exists) {
       const linkCount = await this.prisma.link.count();
       if (linkCount > 0) {
@@ -31,11 +31,11 @@ export class RedisCounterStore extends CounterStore implements OnModuleInit {
           'Short-code counter is not initialized',
         );
       }
-      await this.redis.setNx(COUNTER_KEY, String(COUNTER_SEED));
+      await this.redis.setNx(CACHE_COUNTER_KEY, String(COUNTER_SEED));
     }
   }
 
   async next(): Promise<number> {
-    return this.redis.incr(COUNTER_KEY);
+    return this.redis.incr(CACHE_COUNTER_KEY);
   }
 }

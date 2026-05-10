@@ -24,8 +24,8 @@ const OIDC_COOKIES = [
 ] as const;
 
 const COOKIE_PATHS = ['/', '/api/v1/auth'] as const;
-const OIDC_COOKIE_MAX_AGE = 300_000;
-const SESSION_COOKIE_MAX_AGE = 86_400_000;
+const OIDC_COOKIE_MAX_AGE = 300_000; // 5 minutes
+const SESSION_COOKIE_MAX_AGE = 86_400_000; // 24 hours
 
 @Controller('auth')
 export class AuthController {
@@ -42,6 +42,8 @@ export class AuthController {
 
     this.clearAuthCookies(res);
 
+    // Store OIDC session data in cookies (HttpOnly, Secure, SameSite, Short expiry)
+    // TODO: Consider using a server-side session store (eg. Redis) instead for better security
     const cookieOptions = this.authCookieOptions(OIDC_COOKIE_MAX_AGE);
     res.cookie('oidc_state', state, cookieOptions);
     res.cookie('oidc_nonce', nonce, cookieOptions);

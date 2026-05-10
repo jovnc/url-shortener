@@ -55,6 +55,7 @@ export class LinksController {
   @Get(':code')
   async redirect(@Param('code') code: string, @Res() res: Response) {
     const originalUrl = await this.linksService.resolveRedirect(code);
+    // Prevent browser-level cache of redirects, rely on app-level cache instead
     res.set('Cache-Control', 'no-store');
     res.redirect(302, originalUrl);
   }

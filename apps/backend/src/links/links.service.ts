@@ -15,7 +15,7 @@ import {
   type RedirectCachePayload,
 } from './redirect-cache/redirect-cache.js';
 
-const SHORT_CODE_PATTERN = /^[0-9a-zA-Z-]+$/;
+const SHORT_CODE_PATTERN = /^[0-9a-zA-Z-]+$/; // Alphanumeric and hyphens only for URL friendliness
 const RESERVED_CODES = new Set([
   'api',
   'auth',
@@ -24,6 +24,9 @@ const RESERVED_CODES = new Set([
   'login',
   'logout',
   'me',
+  'dashboard',
+  'admin',
+  '.well-known', // Precaution, since . is not allowed in short codes already
 ]);
 
 @Injectable()
@@ -87,6 +90,8 @@ export class LinksService {
         },
       });
 
+      // Write-through caching strategy to ensure the redirect endpoint can find it immediately after creation
+      // OK if this fails as DB is source of truth
       await this.redirectCache.set(shortCode, {
         originalUrl: link.originalUrl,
         isActive: link.isActive,
@@ -118,6 +123,7 @@ export class LinksService {
 
     if (!link) throw new NotFoundException();
 
+    // Perform soft deletion ONLY by marking the link as inactive
     if (link.isActive) {
       await this.prisma.link.update({
         where: { id: link.id },
@@ -125,12 +131,16 @@ export class LinksService {
       });
     }
 
+    // Invalidate cache to remove stale data
+    // NOTE: Possible failure here can lead to cache inconsistency,
+    // redirect endpoints continues to serve stale data until it expires from cache (TTL)
     await this.redirectCache.del(link.shortCode);
   }
 
   async resolveRedirect(shortCode: string) {
     if (!SHORT_CODE_PATTERN.test(shortCode)) throw new NotFoundException();
 
+    // Cache-aside strategy: Try cache first, then DB if cache miss, and finally update cache with DB result
     const cached = await this.redirectCache.get(shortCode);
     if (cached) return this.resolvePayload(cached);
 

@@ -23,12 +23,18 @@ export interface IdentityClaim {
   name: string | null;
 }
 
-const DPOP_EXPIRY_SECONDS = 120;
+const DPOP_EXPIRY_SECONDS = 120; // 2 minutes
 
 @Injectable()
 export class OidcService implements OnModuleInit {
-  private signingKeyPair!: { publicKey: CryptoKey; privateKey: CryptoKey };
-  private encKeyPair!: { publicKey: CryptoKey; privateKey: CryptoKey };
+  private signingKeyPair!: {
+    publicKey: CryptoKey;
+    privateKey: CryptoKey;
+  };
+  private encKeyPair!: {
+    publicKey: CryptoKey;
+    privateKey: CryptoKey;
+  };
   private jwks!: object;
   private oidcConfig?: Configuration;
 

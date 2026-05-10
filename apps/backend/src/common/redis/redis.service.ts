@@ -23,12 +23,20 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   }
 
   async onModuleInit() {
-    await this.client.connect();
-    await this.client.ping();
+    try {
+      await this.client.connect();
+      await this.client.ping();
+      this.logger.log('Connected to Redis successfully');
+    } catch (error) {
+      this.logger.error('Failed to initialize Redis client', error);
+    }
   }
 
   async onModuleDestroy() {
-    if (this.client.isOpen) await this.client.quit();
+    if (this.client.isOpen) {
+      await this.client.quit();
+      this.logger.log('Redis client disconnected');
+    }
   }
 
   async get(key: string): Promise<string | null> {
