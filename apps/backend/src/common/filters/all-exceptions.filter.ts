@@ -6,7 +6,7 @@ import {
   HttpStatus,
   Logger,
 } from '@nestjs/common';
-import type { Request, Response } from 'express';
+import type { Response } from 'express';
 
 /**
  * Global exception filter to catch unhandled exceptions and return a consistent error response format.
@@ -19,8 +19,6 @@ export class AllExceptionsFilter implements ExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const res = ctx.getResponse<Response>();
-    const req = ctx.getRequest<Request & { id?: string }>();
-    const requestId = req.id ?? 'unknown';
 
     let statusCode: number;
     let message: string | string[];
@@ -37,11 +35,11 @@ export class AllExceptionsFilter implements ExceptionFilter {
       statusCode = HttpStatus.INTERNAL_SERVER_ERROR;
       message = 'Internal Server Error';
       this.logger.error(
-        `Unhandled exception [requestId=${requestId}]`,
+        'Unhandled exception',
         exception instanceof Error ? exception.stack : String(exception),
       );
     }
 
-    res.status(statusCode).json({ statusCode, message, requestId });
+    res.status(statusCode).json({ statusCode, message });
   }
 }
