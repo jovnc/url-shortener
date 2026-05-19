@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  OnModuleInit,
-  ServiceUnavailableException,
-} from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import { PrismaService } from '../../common/database/prisma.service.js';
 import { RedisService } from '../../common/redis/redis.service.js';
 
@@ -23,16 +19,10 @@ export class RedisCounterStore extends CounterStore implements OnModuleInit {
   }
 
   async onModuleInit() {
-    const exists = await this.redis.exists(CACHE_COUNTER_KEY);
-    if (!exists) {
-      const linkCount = await this.prisma.link.count();
-      if (linkCount > 0) {
-        throw new ServiceUnavailableException(
-          'Short-code counter is not initialized',
-        );
-      }
-      await this.redis.setNx(CACHE_COUNTER_KEY, String(COUNTER_SEED));
-    }
+    // Seed counter on startup
+    // Limitation: accept rare failure where redis loses counter value, but random short codes already exist in postgres
+    // Can be mitigated with Redis AOF persistence / store counter in postgres
+    await this.redis.setNx(CACHE_COUNTER_KEY, String(COUNTER_SEED));
   }
 
   async next(): Promise<number> {

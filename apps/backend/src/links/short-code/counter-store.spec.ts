@@ -1,4 +1,3 @@
-import { ServiceUnavailableException } from '@nestjs/common';
 import { describe, expect, it } from 'vitest';
 import {
   createPrismaMock,
@@ -31,27 +30,6 @@ describe('RedisCounterStore', () => {
         'links:counter',
         String(62 ** 5 - 1),
       );
-    });
-
-    it('skips seeding when the counter already exists', async () => {
-      const { store, redis } = createStore();
-      redis.exists.mockResolvedValue(true);
-
-      await store.onModuleInit();
-
-      expect(redis.setNx).not.toHaveBeenCalled();
-    });
-
-    it('refuses to seed when links exist without a counter', async () => {
-      const { store, redis, prisma } = createStore();
-      redis.exists.mockResolvedValue(false);
-      prisma.link.count.mockResolvedValue(1);
-
-      await expect(store.onModuleInit()).rejects.toBeInstanceOf(
-        ServiceUnavailableException,
-      );
-
-      expect(redis.setNx).not.toHaveBeenCalled();
     });
   });
 
